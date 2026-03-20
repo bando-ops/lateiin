@@ -429,7 +429,7 @@ CREATE POLICY "allow_all_results" ON results FOR ALL USING (true) WITH CHECK (tr
       <!-- Basis-URL -->
       <div class="setup-box">
         <h3>🌐 Basis-URL für Schüler-Links</h3>
-        <p style="font-size:13px; color:var(--muted); margin-bottom:14px;">Die URL, unter der <code>aufgabe.html</code> erreichbar ist (z.B. wenn du die Dateien auf einem Webserver hostest).</p>
+        <p style="font-size:13px; color:var(--muted); margin-bottom:14px;">Die Basis-URL deines Projekts (Ordner, in dem die HTML-Dateien liegen). Beispiel: <code>https://bando-ops.github.io/lateinn/aufgabe.html</code></p>
         <div class="field" style="max-width:500px;">
           <label>Basis-URL</label>
           <input type="text" id="cfgBaseUrl" placeholder="https://meineschule.de/latein/aufgabe.html" />
@@ -660,6 +660,19 @@ function copySQL() {
 /* ═══════════════════════════════════════════════════════════
    STUDENTS
 ═══════════════════════════════════════════════════════════ */
+
+/* Builds the correct URL for each task */
+function taskLink(taskId, code) {
+  const base = baseUrl.replace(/\/[^/]*\.html(\?.*)?$/, '/'); // strip filename
+  const files = {
+    gerundium:       'aufgabe.html',
+    aci:             'aufgabe.html',
+    singular_plural: 'aufgabe7.html',
+  };
+  const file = files[taskId] || 'aufgabe.html';
+  return base + file + '?code=' + code;
+}
+
 async function loadStudents() {
   const tbody = document.getElementById('studentTable');
   if (!sb) { tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><p>Supabase nicht konfiguriert. Gehe zu Einstellungen.</p></div></td></tr>`; return; }
@@ -672,7 +685,7 @@ async function loadStudents() {
     }
     tbody.innerHTML = students.map(s => {
       const res = results.find(r => r.student_id === s.id);
-      const link = `${baseUrl}?code=${s.code}`;
+      const link = taskLink(s.task_id, s.code);
       const statusBadge = res
         ? (res.is_solved
             ? '<span class="badge green">✓ Gelöst</span>'
