@@ -555,15 +555,28 @@ CREATE POLICY "allow_all_results" ON results FOR ALL USING (true) WITH CHECK (tr
     <h3>Schüler hinzufügen</h3>
     <div class="field">
       <label>Name des Schülers</label>
-      <input type="text" id="newStudentName" placeholder="z.B. Max Mustermann" class="field" style="width:100%; background:var(--bg); border:1px solid var(--border2); border-radius:8px; padding:10px 12px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px; outline:none;" />
+      <input type="text" id="newStudentName" placeholder="z.B. Max Mustermann" style="width:100%; background:var(--bg); border:1px solid var(--border2); border-radius:8px; padding:10px 12px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px; outline:none;" />
     </div>
     <div class="field">
-      <label>Aufgabe zuweisen</label>
+      <label>Buch</label>
+      <select id="newStudentBook" onchange="updateLektionDropdown()">
+        <option value="">– Buch wählen –</option>
+        <option value="prima_nova">prima.nova</option>
+        <option value="roma_a">Roma A</option>
+        <option value="pontes">Pontes Gesamtband 2020</option>
+        <option value="sonstige">Sonstige</option>
+      </select>
+    </div>
+    <div class="field" id="fieldLektion" style="display:none;">
+      <label>Lektion</label>
+      <select id="newStudentLektion" onchange="updateTaskDropdown()">
+        <option value="">– Lektion wählen –</option>
+      </select>
+    </div>
+    <div class="field" id="fieldTask" style="display:none;">
+      <label>Aufgabe</label>
       <select id="newStudentTask">
-        <option value="gerundium">Gerundium & Gerundivum markieren</option>
-        <option value="aci">AcI-Bestandteile markieren</option>
-        <option value="singular_plural">Singular oder Plural (Aufgabe 7)</option>
-        <option value="lueckentext">Lückentext – Grammatik</option>
+        <option value="">– Aufgabe wählen –</option>
       </select>
     </div>
     <div class="field">
@@ -780,6 +793,112 @@ function taskLink(taskId, code) {
   return base + file + '?code=' + code;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   TASK CATALOGUE  –  Buch → Lektion → Aufgabe
+═══════════════════════════════════════════════════════════ */
+const TASK_CATALOGUE = {
+  prima_nova: {
+    label: 'prima.nova',
+    lektionen: Array.from({length:45}, (_,i) => ({
+      id: `pn_l${i+1}`,
+      label: `Lektion ${i+1}`,
+      tasks: []   // hier später Aufgaben eintragen
+    }))
+  },
+  roma_a: {
+    label: 'Roma A',
+    lektionen: Array.from({length:30}, (_,i) => ({
+      id: `ra_l${i+1}`,
+      label: `Lektion ${i+1}`,
+      tasks: i === 0 ? [
+        { id: 'lueckentext', label: 'Lückentext – Grammatik' }
+      ] : []
+    }))
+  },
+  pontes: {
+    label: 'Pontes Gesamtband 2020',
+    lektionen: Array.from({length:34}, (_,i) => ({
+      id: `po_l${i+1}`,
+      label: `Lektion ${i+1}`,
+      tasks: []
+    }))
+  },
+  sonstige: {
+    label: 'Sonstige',
+    lektionen: [
+      {
+        id: 'sonstige_1',
+        label: 'Sonstige Aufgaben',
+        tasks: [
+          { id: 'gerundium',       label: 'Gerundium & Gerundivum markieren' },
+          { id: 'aci',             label: 'AcI-Bestandteile markieren' },
+          { id: 'singular_plural', label: 'Singular oder Plural (Aufgabe 7)' },
+        ]
+      }
+    ]
+  }
+};
+
+function updateLektionDropdown() {
+  const book    = document.getElementById('newStudentBook').value;
+  const selLek  = document.getElementById('newStudentLektion');
+  const selTask = document.getElementById('newStudentTask');
+  const fLek    = document.getElementById('fieldLektion');
+  const fTask   = document.getElementById('fieldTask');
+
+  selLek.innerHTML  = '<option value="">– Lektion wählen –</option>';
+  selTask.innerHTML = '<option value="">– Aufgabe wählen –</option>';
+  fLek.style.display  = 'none';
+  fTask.style.display = 'none';
+
+  if (!book || !TASK_CATALOGUE[book]) return;
+
+  const lektionen = TASK_CATALOGUE[book].lektionen;
+  lektionen.forEach(lek => {
+    if (lek.tasks.length === 0) return; // only show lektionen that have tasks
+    const opt = document.createElement('option');
+    opt.value = lek.id;
+    opt.textContent = lek.label;
+    selLek.appendChild(opt);
+  });
+
+  // If sonstige, only one lektion → auto-select and skip lektion step
+  if (book === 'sonstige') {
+    selLek.value = lektionen[0].id;
+    updateTaskDropdown();
+    fLek.style.display = 'none';
+  } else {
+    fLek.style.display = selLek.options.length > 1 ? 'block' : 'none';
+  }
+}
+
+function updateTaskDropdown() {
+  const book    = document.getElementById('newStudentBook').value;
+  const lekId   = document.getElementById('newStudentLektion').value;
+  const selTask = document.getElementById('newStudentTask');
+  const fTask   = document.getElementById('fieldTask');
+
+  selTask.innerHTML = '<option value="">– Aufgabe wählen –</option>';
+  fTask.style.display = 'none';
+
+  if (!book || !lekId) return;
+
+  const lek = TASK_CATALOGUE[book]?.lektionen.find(l => l.id === lekId);
+  if (!lek || !lek.tasks.length) return;
+
+  lek.tasks.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = t.label;
+    selTask.appendChild(opt);
+  });
+
+  // Auto-select if only one task
+  if (lek.tasks.length === 1) selTask.value = lek.tasks[0].id;
+
+  fTask.style.display = 'block';
+}
+
 let _allStudents = [], _allStudentResults = [];
 
 async function loadStudents() {
@@ -855,6 +974,11 @@ function renderStudentTable() {
 function openAddStudent() {
   genCode();
   document.getElementById('newStudentName').value = '';
+  document.getElementById('newStudentBook').value = '';
+  document.getElementById('newStudentLektion').innerHTML = '<option value="">– Lektion wählen –</option>';
+  document.getElementById('newStudentTask').innerHTML = '<option value="">– Aufgabe wählen –</option>';
+  document.getElementById('fieldLektion').style.display = 'none';
+  document.getElementById('fieldTask').style.display = 'none';
   openModal('modalAddStudent');
 }
 
@@ -862,7 +986,11 @@ async function addStudent() {
   const name = document.getElementById('newStudentName').value.trim();
   const code = document.getElementById('newStudentCode').value.trim();
   const task = document.getElementById('newStudentTask').value;
+  const book = document.getElementById('newStudentBook').value;
+  const lek  = document.getElementById('newStudentLektion').value;
   if (!name) { alert('Bitte Namen eingeben.'); return; }
+  if (!book) { alert('Bitte ein Buch wählen.'); return; }
+  if (!task) { alert('Bitte eine Aufgabe wählen.'); return; }
   if (!sb)   { alert('Supabase nicht konfiguriert.'); return; }
   try {
     await sb.insert('students', { name, code, task_id: task });
