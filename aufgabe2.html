@@ -708,9 +708,6 @@
 
 <div class="spinner-overlay" id="codeSpinner"><div class="spin"></div><span>Wird geladen…</span></div>
 
-<div id="codeScreen" style="display:none;">
-  <div class="code-card">
-    <div class="icon">📚</div>
     <h1>Aufgabe öffnen</h1>
     <p>Gib deinen persönlichen Zugangscode ein, den du von deiner Lehrkraft erhalten hast.</p>
     <input type="text" class="code-input" id="codeInput" placeholder="ABC-123-XYZ" maxlength="11" autocomplete="off" spellcheck="false"/>
@@ -725,6 +722,16 @@
 </div>
 <div id="teacherCommentBox">
   <div class="teacher-comment"><strong>💬 Kommentar deiner Lehrkraft</strong><span id="teacherCommentText"></span></div>
+</div>
+
+
+<!-- No code error -->
+<div id="noCodeError" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:20px; background:var(--bg); font-family:system-ui,sans-serif;">
+  <div style="text-align:center; max-width:360px;">
+    <div style="font-size:48px; margin-bottom:16px;">🔒</div>
+    <h2 style="font-size:20px; font-weight:700; color:#1f2937; margin-bottom:8px;">Kein Zugang</h2>
+    <p style="color:#6b7280; font-size:14px; line-height:1.6;">Du hast keinen persönlichen Link für diese Aufgabe. Bitte wende dich an deine Lehrkraft.</p>
+  </div>
 </div>
 
 <div id="taskWrapper" style="display:none;">
@@ -1472,16 +1479,18 @@ function initSb2() {
   };
 }
 
-window.addEventListener('DOMContentLoaded',()=>{
-  initSb2();
-  const params=new URLSearchParams(window.location.search);
-  const code=params.get('code');
-  if(code){document.getElementById('codeInput').value=code.toUpperCase();authenticateCode2(code.toUpperCase());}
-  else{document.getElementById('codeSpinner').classList.add('hidden');document.getElementById('codeScreen').style.display='flex';}
-  document.getElementById('codeInput').addEventListener('keydown',e=>{if(e.key==='Enter')submitCode();});
+window.addEventListener('DOMContentLoaded', () => {
+  initSb();
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (code) {
+    authenticateCode(code.toUpperCase());
+  } else {
+    // No code in URL → show error
+    document.getElementById('spinnerOverlay').classList.add('hidden');
+    document.getElementById('noCodeError').style.display = 'flex';
+  }
 });
-
-function submitCode(){const code=document.getElementById('codeInput').value.trim().toUpperCase();if(code)authenticateCode2(code);}
 
 async function authenticateCode2(code){
   document.getElementById('codeSpinner').classList.remove('hidden');

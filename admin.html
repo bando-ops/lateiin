@@ -393,7 +393,6 @@
           <thead>
             <tr>
               <th>Name</th>
-              <th>Zugangs-Code</th>
               <th>Persönlicher Link</th>
               <th>Zugewiesene Aufgabe</th>
               <th>Status</th>
@@ -401,7 +400,7 @@
             </tr>
           </thead>
           <tbody id="studentTable">
-            <tr><td colspan="6"><div class="empty"><div class="spinner"></div></div></td></tr>
+            <tr><td colspan="5"><div class="empty"><div class="spinner"></div></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -579,13 +578,7 @@ CREATE POLICY "allow_all_results" ON results FOR ALL USING (true) WITH CHECK (tr
         <option value="">– Aufgabe wählen –</option>
       </select>
     </div>
-    <div class="field">
-      <label>Zugangs-Code</label>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <input type="text" id="newStudentCode" placeholder="Wird automatisch generiert" style="flex:1; background:var(--bg); border:1px solid var(--border2); border-radius:8px; padding:10px 12px; color:var(--text); font-family:'DM Mono',monospace; font-size:13px; outline:none;" />
-        <button class="btn-sm" onclick="genCode()" style="white-space:nowrap;">Neu</button>
-      </div>
-    </div>
+
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('modalAddStudent')">Abbrechen</button>
       <button class="btn-primary" style="width:auto; padding:9px 24px;" onclick="addStudent()">Hinzufügen</button>
@@ -903,7 +896,7 @@ let _allStudents = [], _allStudentResults = [];
 
 async function loadStudents() {
   const tbody = document.getElementById('studentTable');
-  if (!sb) { tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><p>Supabase nicht konfiguriert. Gehe zu Einstellungen.</p></div></td></tr>`; return; }
+  if (!sb) { tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><p>Supabase nicht konfiguriert. Gehe zu Einstellungen.</p></div></td></tr>`; return; }
   try {
     _allStudents = await sb.select('students', 'order=created_at.asc');
     _allStudentResults = await sb.select('results', '');
@@ -920,7 +913,7 @@ function renderStudentTable() {
   const statusQ = document.getElementById('filterStudentStatus')?.value || '';
 
   if (!_allStudents.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">👥</div><p>Noch keine Schüler angelegt.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><div class="empty-icon">👥</div><p>Noch keine Schüler angelegt.</p></div></td></tr>`;
     return;
   }
 
@@ -937,7 +930,7 @@ function renderStudentTable() {
     filtered.length + ' von ' + _allStudents.length + ' Schülern';
 
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><p>Keine Schüler gefunden.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><p>Keine Schüler gefunden.</p></div></td></tr>`;
     return;
   }
 
@@ -953,7 +946,6 @@ function renderStudentTable() {
       : '<span class="badge gray">Noch nicht begonnen</span>';
     return `<tr>
       <td><strong>${esc(s.name)}</strong></td>
-      <td><span class="mono">${esc(s.code)}</span></td>
       <td>
         <div class="link-copy">
           <span title="${esc(link)}">${esc(link)}</span>
@@ -972,7 +964,6 @@ function renderStudentTable() {
 }
 
 function openAddStudent() {
-  genCode();
   document.getElementById('newStudentName').value = '';
   document.getElementById('newStudentBook').value = '';
   document.getElementById('newStudentLektion').innerHTML = '<option value="">– Lektion wählen –</option>';
@@ -984,14 +975,16 @@ function openAddStudent() {
 
 async function addStudent() {
   const name = document.getElementById('newStudentName').value.trim();
-  const code = document.getElementById('newStudentCode').value.trim();
   const task = document.getElementById('newStudentTask').value;
   const book = document.getElementById('newStudentBook').value;
-  const lek  = document.getElementById('newStudentLektion').value;
   if (!name) { alert('Bitte Namen eingeben.'); return; }
   if (!book) { alert('Bitte ein Buch wählen.'); return; }
   if (!task) { alert('Bitte eine Aufgabe wählen.'); return; }
   if (!sb)   { alert('Supabase nicht konfiguriert.'); return; }
+  // Auto-generate code (used for URL, not shown to user)
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const part = (n) => Array.from({length:n}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+  const code = `${part(3)}-${part(3)}-${part(3)}`;
   try {
     await sb.insert('students', { name, code, task_id: task });
     closeModal('modalAddStudent');
@@ -1008,12 +1001,6 @@ function openAssign(studentId, currentTask) {
   const task = prompt(`Aufgabe für diesen Schüler:\n(gerundium / aci)`, currentTask || 'gerundium');
   if (task === null) return;
   sb.update('students', { id: studentId }, { task_id: task }).then(loadStudents).catch(e => alert(e.message));
-}
-
-function genCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const part = (n) => Array.from({length:n}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
-  document.getElementById('newStudentCode').value = `${part(3)}-${part(3)}-${part(3)}`;
 }
 
 function copyLink(link) {

@@ -634,25 +634,6 @@
     </style>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <style>
-    /* ── CODE SCREEN ─────────────────────────────────────── */
-    #codeScreen {
-      min-height: 100vh; display: flex; align-items: center;
-      justify-content: center; padding: 20px;
-      background: radial-gradient(ellipse at 50% 30%, rgba(25,118,210,0.06) 0%, transparent 65%), #f6f7fb;
-      font-family: DM Sans, system-ui, sans-serif;
-    }
-    .code-card { width: min(420px,100%); background: #fff; border: 1px solid #e5e7eb; border-radius: 20px; padding: 40px 36px; box-shadow: 0 12px 40px rgba(0,0,0,0.08); text-align: center; }
-    .code-card .icon { font-size: 48px; margin-bottom: 16px; }
-    .code-card h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; color: #1f2937; }
-    .code-card p { color: #6b7280; font-size: 14px; margin-bottom: 28px; line-height: 1.5; }
-    .code-input { width: 100%; background: #f6f7fb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 14px 16px; font-size: 20px; font-weight: 700; text-align: center; letter-spacing: 0.1em; color: #1f2937; outline: none; transition: border-color 0.15s; text-transform: uppercase; font-family: DM Sans, monospace; }
-    .code-input:focus { border-color: #1976d2; }
-    .code-input.error { border-color: #dc2626; }
-    .btn-enter { margin-top: 16px; width: 100%; background: #1976d2; border: none; border-radius: 12px; padding: 14px; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; font-family: DM Sans, sans-serif; transition: background 0.15s; }
-    .btn-enter:hover { background: #135aa3; }
-    .btn-enter:disabled { opacity: 0.6; cursor: not-allowed; }
-    .code-error { color: #dc2626; font-size: 13px; margin-top: 12px; min-height: 18px; }
-    .code-hint { font-size: 12px; color: #6b7280; margin-top: 20px; }
     #welcomeBanner { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 10px 20px; display: none; align-items: center; justify-content: space-between; font-size: 14px; font-family: DM Sans, sans-serif; }
     .welcome-name { font-weight: 700; color: #1f2937; }
     .welcome-task { color: #6b7280; }
@@ -673,10 +654,6 @@
   <span>Wird geladen…</span>
 </div>
 
-<!-- Code Screen -->
-<div id="codeScreen" style="display:none;">
-  <div class="code-card">
-    <div class="icon">📚</div>
     <h1>Aufgabe öffnen</h1>
     <p>Gib deinen persönlichen Zugangscode ein, den du von deiner Lehrkraft erhalten hast.</p>
     <input type="text" class="code-input" id="codeInput" placeholder="ABC-123-XYZ" maxlength="11" autocomplete="off" spellcheck="false" />
@@ -703,6 +680,16 @@
 </div>
 
 <!-- Task wrapper (hidden until auth) -->
+
+<!-- No code error -->
+<div id="noCodeError" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:20px; background:var(--bg); font-family:system-ui,sans-serif;">
+  <div style="text-align:center; max-width:360px;">
+    <div style="font-size:48px; margin-bottom:16px;">🔒</div>
+    <h2 style="font-size:20px; font-weight:700; color:#1f2937; margin-bottom:8px;">Kein Zugang</h2>
+    <p style="color:#6b7280; font-size:14px; line-height:1.6;">Du hast keinen persönlichen Link für diese Aufgabe. Bitte wende dich an deine Lehrkraft.</p>
+  </div>
+</div>
+
 <div id="taskWrapper" style="display:none;">
 
     
@@ -1265,16 +1252,14 @@ window.addEventListener('DOMContentLoaded', () => {
   initSb();
   const params = new URLSearchParams(window.location.search);
   const code = params.get('code');
-  if (code) { document.getElementById('codeInput').value = code.toUpperCase(); authenticateCode(code.toUpperCase()); }
-  else { document.getElementById('spinnerOverlay').classList.add('hidden'); document.getElementById('codeScreen').style.display = 'flex'; }
-  document.getElementById('codeInput').addEventListener('keydown', e => { if(e.key==='Enter') submitCode(); });
+  if (code) {
+    authenticateCode(code.toUpperCase());
+  } else {
+    // No code in URL → show error
+    document.getElementById('spinnerOverlay').classList.add('hidden');
+    document.getElementById('noCodeError').style.display = 'flex';
+  }
 });
-
-function submitCode() {
-  const code = document.getElementById('codeInput').value.trim().toUpperCase();
-  if (!code) return;
-  authenticateCode(code);
-}
 
 async function authenticateCode(code) {
   document.getElementById('spinnerOverlay').classList.remove('hidden');
@@ -1299,8 +1284,7 @@ async function authenticateCode(code) {
     startTask();
   } catch(e) {
     document.getElementById('spinnerOverlay').classList.add('hidden');
-    document.getElementById('codeScreen').style.display = 'flex';
-    document.getElementById('codeError').textContent = 'Verbindungsfehler: ' + e.message;
+    document.getElementById('noCodeError').style.display = 'flex';
   }
 }
 
