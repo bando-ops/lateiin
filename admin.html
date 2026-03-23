@@ -988,7 +988,6 @@ function renderStudentTable() {
       <td>${TASKS[s.task_id] || s.task_id || '—'}</td>
       <td>${statusBadge}</td>
       <td style="display:flex; gap:8px; flex-wrap:wrap;">
-        <button class="btn-sm" onclick="openAssign('${s.id}','${s.task_id||''}')">Aufgabe</button>
         ${res ? `<button class="btn-sm success" onclick="resetTries('${res.id}','${s.name}')">Reset</button>` : ''}
         <button class="btn-sm danger" onclick="deleteStudent('${s.id}','${s.name}')">Löschen</button>
       </td>
@@ -1029,11 +1028,6 @@ async function deleteStudent(id, name) {
   try { await sb.delete('students', { id }); loadStudents(); loadResults(); } catch(e) { alert(e.message); }
 }
 
-function openAssign(studentId, currentTask) {
-  const task = prompt(`Aufgabe für diesen Schüler:\n(gerundium / aci)`, currentTask || 'gerundium');
-  if (task === null) return;
-  sb.update('students', { id: studentId }, { task_id: task }).then(loadStudents).catch(e => alert(e.message));
-}
 
 function copyLink(link) {
   navigator.clipboard.writeText(link).then(() => {
