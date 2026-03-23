@@ -396,7 +396,7 @@
         border: 1.5px solid rgba(0, 0, 0, 0.1);
       }
 
-      .swatch-pink {
+      .swatch-blue {
         background: #cce3ff;
       }
 
@@ -675,50 +675,34 @@
         }
       }
     
-  .auth-spinner{position:fixed;inset:0;background:#f6f7fb;display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:14px;font-family:system-ui,sans-serif;font-size:14px;color:#6b7280;}
-  .auth-spinner.hidden{display:none;}
-  .auth-spin{width:34px;height:34px;border:3px solid #e5e7eb;border-top-color:#1976d2;border-radius:50%;animation:authspin .7s linear infinite;}
-  @keyframes authspin{to{transform:rotate(360deg);}}
-  #authError{display:none;min-height:100vh;align-items:center;justify-content:center;background:#f6f7fb;text-align:center;padding:20px;font-family:system-ui,sans-serif;}
-  #taskWrap{display:none;}
-  #welcomeBar{display:none;background:#fff;border-bottom:1px solid #e5e7eb;padding:10px 20px;align-items:center;gap:8px;font-size:14px;font-family:system-ui,sans-serif;}
-  #teacherMsg{display:none;max-width:1100px;margin:14px auto 0;padding:0 18px;}
-  .t-msg{background:#fffbeb;border:1px solid #fbbf24;border-radius:12px;padding:14px 18px;font-size:14px;color:#78350f;line-height:1.55;}
-  .t-msg b{display:block;margin-bottom:4px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#b45309;}
-
+  .asp{position:fixed;inset:0;background:#f6f7fb;display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:14px;font-family:system-ui,sans-serif;font-size:14px;color:#6b7280;}
+  .asp.off{display:none;}
+  .aspin{width:34px;height:34px;border:3px solid #e5e7eb;border-top-color:#1976d2;border-radius:50%;animation:aspin .7s linear infinite;}
+  @keyframes aspin{to{transform:rotate(360deg);}}
+  #ae{display:none;min-height:100vh;align-items:center;justify-content:center;background:#f6f7fb;text-align:center;padding:20px;font-family:system-ui,sans-serif;}
+  #tw{display:none;}
+  #wb{display:none;background:#fff;border-bottom:1px solid #e5e7eb;padding:10px 20px;align-items:center;gap:8px;font-size:14px;font-family:system-ui,sans-serif;}
+  #tm{display:none;max-width:1100px;margin:14px auto 0;padding:0 18px;}
+  .tmb{background:#fffbeb;border:1px solid #fbbf24;border-radius:12px;padding:14px 18px;font-size:14px;color:#78350f;line-height:1.55;}
+  .tmb b{display:block;margin-bottom:4px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#b45309;}
   </style>
   </head>
   <body>
-<div class="auth-spinner" id="authSpinner"><div class="auth-spin"></div><span>Wird geladen…</span></div>
-<div id="authError" style="display:none;min-height:100vh;align-items:center;justify-content:center;background:#f6f7fb;">
-  <div style="max-width:340px;text-align:center;">
-    <div style="font-size:48px;margin-bottom:14px;">🔒</div>
-    <h2 style="font-size:20px;font-weight:700;color:#1f2937;margin-bottom:8px;">Kein Zugang</h2>
-    <p style="color:#6b7280;font-size:14px;line-height:1.6;">Kein gültiger Link. Bitte wende dich an deine Lehrkraft.</p>
-  </div>
-</div>
-<div id="welcomeBar">
-  <span id="wbName" style="font-weight:700;color:#1f2937;"></span>
-  <span id="wbTask" style="color:#6b7280;margin-left:4px;"></span>
-</div>
-<div id="teacherMsg">
-  <div class="t-msg"><b>💬 Kommentar deiner Lehrkraft</b><span id="teacherTxt"></span></div>
-</div>
-<div id="taskWrap">
-
+<div class="asp" id="as"><div class="aspin"></div><span>Wird geladen…</span></div>
+<div id="ae"><div style="max-width:340px;text-align:center;"><div style="font-size:48px;margin-bottom:14px;">🔒</div>
+<h2 style="font-size:20px;font-weight:700;color:#1f2937;margin-bottom:8px;">Kein Zugang</h2>
+<p style="color:#6b7280;font-size:14px;line-height:1.6;">Kein gültiger Link. Bitte wende dich an deine Lehrkraft.</p></div></div>
+<div id="wb"><span id="wbn" style="font-weight:700;color:#1f2937;"></span><span style="color:#6b7280;margin-left:4px;">AcI-Bestandteile markieren</span></div>
+<div id="tm"><div class="tmb"><b>💬 Kommentar deiner Lehrkraft</b><span id="tmt"></span></div></div>
+<div id="tw">
     <div class="page">
       <!-- Top-Navigation -->
-      <header class="top-nav">
-        <button type="button" class="btn-overview">Übersicht</button>
-        <button type="button" class="btn-overview">Abmelden</button>
-      </header>
-
       <!-- Haupt-Card -->
       <main class="card">
         <section id="task1" aria-label="Gerundium & Gerundivum">
           <h1 class="task-title">
             Markiere die AcI-Bestandteile.
-            <span class="task-sub">Klicke auf ein Wort, um es zu markieren.</span>
+            <span class="task-sub">Markiere Signalverb (rosa), Subjektsakkusativ (blau) und Infinitiv (grün).</span>
           </h1>
 
           <!-- Farbauswahl -->
@@ -727,11 +711,11 @@
               <span class="active-tool-label" id="activeToolLabel">Signalverb</span>
             </div>
             <div class="colorbar-tools">
-              <button class="color-btn is-active" data-color="blue" aria-label="Signalverb (rosa)">
-                <span class="swatch swatch-blue"></span>
+              <button class="color-btn is-active" data-color="pink" aria-label="Signalverb (rosa)">
+                <span class="swatch swatch-pink"></span>
               </button>
-              <button class="color-btn" data-color="yellow" aria-label="Subjektsakkusativ (blau)">
-                <span class="swatch swatch-yellow"></span>
+              <button class="color-btn" data-color="blue" aria-label="Subjektsakkusativ (blau)">
+                <span class="swatch swatch-blue"></span>
               </button>
               <button class="color-btn" data-color="green" aria-label="Infinitiv (grün)">
                 <span class="swatch swatch-green"></span>
@@ -741,18 +725,9 @@
               </button>
 
               <div class="legend">
-                <span class="legend-item">
-                  <span class="swatch-mini swatch-pink"></span>
-                  Signalverb
-                </span>
-                <span class="legend-item">
-                  <span class="swatch-mini swatch-blue"></span>
-                  Subjektsakkusativ
-                </span>
-                <span class="legend-item">
-                  <span class="swatch-mini swatch-green"></span>
-                  Infinitiv
-                </span>
+                <span class="legend-item"><span class="swatch-mini swatch-pink"></span> Signalverb</span>
+                <span class="legend-item"><span class="swatch-mini swatch-blue"></span> Subjektsakkusativ</span>
+                <span class="legend-item"><span class="swatch-mini swatch-green"></span> Infinitiv</span>
               </div>
             </div>
           </div>
@@ -935,10 +910,10 @@
       };
 
       const explanations = [
-        "Caesar <b>dicit</b> (Signalverb) <span style='background:#cce3ff;border-radius:3px;padding:1px 3px'>Romanos</span> (Subjektsakkusativ) <span style='background:#c8f5d4;border-radius:3px;padding:1px 3px'>esse</span> fortes.",
-        "Pater <b>putat</b> (Signalverb) <span style='background:#cce3ff;border-radius:3px;padding:1px 3px'>filium</span> (Subjektsakkusativ) <span style='background:#c8f5d4;border-radius:3px;padding:1px 3px'>venire</span> cras.",
-        "Senatus <b>audit</b> (Signalverb) <span style='background:#cce3ff;border-radius:3px;padding:1px 3px'>hostes</span> (Subjektsakkusativ) <span style='background:#c8f5d4;border-radius:3px;padding:1px 3px'>appropinquare</span> urbem.",
-        "Magister <b>credit</b> (Signalverb) <span style='background:#cce3ff;border-radius:3px;padding:1px 3px'>discipulos</span> (Subjektsakkusativ) <span style='background:#c8f5d4;border-radius:3px;padding:1px 3px'>laborare</span> diligenter.",
+        "Caesar <b>dicit</b> (Signalverb) <span style='background:#cce3ff;border-radius:3px;padding:1px 3px'>Romanos</span> (Subjektsakkusativ) <span style='background:#c8f5d4;border-radius:3px;padding:1px 3px'>esse</span> fortes – Caesar sagt, dass die Römer tapfer sind.",
+        "Pater <b>putat</b> (Signalverb) <span style='background:#cce3ff;border-radius:3px;padding:1px 3px'>filium</span> (Subjektsakkusativ) <span style='background:#c8f5d4;border-radius:3px;padding:1px 3px'>venire</span> cras – Der Vater glaubt, dass der Sohn morgen kommt.",
+        "Senatus <b>audit</b> (Signalverb) <span style='background:#cce3ff;border-radius:3px;padding:1px 3px'>hostes</span> (Subjektsakkusativ) <span style='background:#c8f5d4;border-radius:3px;padding:1px 3px'>appropinquare</span> urbem – Der Senat hört, dass die Feinde sich der Stadt nähern.",
+        "Magister <b>credit</b> (Signalverb) <span style='background:#cce3ff;border-radius:3px;padding:1px 3px'>discipulos</span> (Subjektsakkusativ) <span style='background:#c8f5d4;border-radius:3px;padding:1px 3px'>laborare</span> diligenter – Der Lehrer glaubt, dass die Schüler fleißig arbeiten.",
       ];
 
       /* ==========================================================================
@@ -1376,77 +1351,77 @@
    11. INITIALISIERUNG
    ========================================================================== */
 
-function collectAnswers() {
-  const answers = {};
-  sentences.forEach(s => {
-    answers[s.id] = s.tokens.map((tok,idx) => {
-      if (tok.isPunct) return null;
-      const span = markArea.querySelector('.word[data-sentence-id="'+s.id+'"][data-token-idx="'+idx+'"]');
-      const color = span ? span.dataset.color : '';
-      const correctColor = tok.role ? roleToColor[tok.role] : '';
-      return {idx, text:tok.w, color, correct: color&&correctColor ? color===correctColor : null};
+function collectA(){
+  var ans={};
+  sentences.forEach(function(s){
+    ans[s.id]=s.tokens.map(function(tok,idx){
+      if(tok.isPunct)return null;
+      var span=markArea.querySelector('.word[data-sentence-id="'+s.id+'"][data-token-idx="'+idx+'"]');
+      var color=span?span.dataset.color:'';
+      var cc=tok.role?roleToColor[tok.role]:'';
+      return{idx:idx,text:tok.w,color:color,correct:color&&cc?color===cc:null};
     }).filter(Boolean);
   });
-  return answers;
+  return ans;
 }
-function initTask(student, result) {
-  triesLeft = result.tries_left ?? 3;
-  isSolved  = result.is_solved ?? false;
+function initTask(student,result){
+  triesLeft=result.tries_left!=null?result.tries_left:3;
+  isSolved=result.is_solved||false;
   buildMarkArea();
   updateTriesUI();
   renderHintStack(1);
-  document.getElementById('hintStack').addEventListener('click', e => {
-    const btn = e.target.closest('.hint-btn');
-    if (!btn) return;
-    revealNextHint(1);
+  document.getElementById('hintStack').addEventListener('click',function(e){
+    var btn=e.target.closest('.hint-btn');
+    if(btn)revealNextHint(1);
   });
-  if (result.answers) {
-    sentences.forEach(s => {
-      const sa = result.answers[s.id] || [];
-      s.tokens.forEach((tok, idx) => {
-        const saved = sa.find(a => a && a.idx === idx);
-        if (!saved || !saved.color) return;
-        const span = markArea.querySelector('.word[data-sentence-id="'+s.id+'"][data-token-idx="'+idx+'"]');
-        if (span) span.dataset.color = saved.color;
+  if(result.answers){
+    sentences.forEach(function(s){
+      var sa=result.answers[s.id]||[];
+      s.tokens.forEach(function(tok,idx){
+        var saved=sa.find(function(a){return a&&a.idx===idx;});
+        if(!saved||!saved.color)return;
+        var span=markArea.querySelector('.word[data-sentence-id="'+s.id+'"][data-token-idx="'+idx+'"]');
+        if(span)span.dataset.color=saved.color;
       });
     });
   }
-  if (isSolved) { feedbackMsg('Bereits gelöst! ✓','good'); checkBtn.textContent='Weiter'; }
-  if (triesLeft===0 && !isSolved) { checkBtn.disabled=true; feedbackMsg('Keine Versuche mehr.','bad'); }
+  if(isSolved){feedbackMsg('Bereits gelöst! ✓','good');checkBtn.textContent='Weiter';}
+  if(triesLeft===0&&!isSolved){checkBtn.disabled=true;feedbackMsg('Keine Versuche mehr.','bad');}
 }
 
-      // initTask() called by auth layer
+      // initTask called by auth
     </script>
-  </div><!-- /taskWrap -->
+  
+</div><!-- /tw -->
 <script>
-const SB_URL='https://jwvdyuvzapkiivsvkeis.supabase.co',SB_KEY='sb_publishable_DiTHFK_HaV9jN40fkLKHDA_PrzS8oKc';
-const SB_H={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
-async function sbGet(t,q){const r=await fetch(SB_URL+'/rest/v1/'+t+'?'+q,{headers:SB_H});if(!r.ok)throw new Error(await r.text());return r.json();}
-async function sbSave(sid,tid,data){
-  try{
-    const ex=await sbGet('results','student_id=eq.'+sid+'&task_id=eq.'+tid);
-    const p={student_id:sid,task_id:tid,updated_at:new Date().toISOString(),...data};
-    if(ex&&ex[0])await fetch(SB_URL+'/rest/v1/results?id=eq.'+ex[0].id,{method:'PATCH',headers:SB_H,body:JSON.stringify(p)});
-    else{p.submitted_at=new Date().toISOString();await fetch(SB_URL+'/rest/v1/results',{method:'POST',headers:SB_H,body:JSON.stringify(p)});}
-  }catch(e){console.warn('save:',e);}
+var _S=null,_R=null;
+var SU='https://jwvdyuvzapkiivsvkeis.supabase.co',SK='sb_publishable_DiTHFK_HaV9jN40fkLKHDA_PrzS8oKc',SH={'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json','Prefer':'return=representation'};
+function sg(t,q){return fetch(SU+'/rest/v1/'+t+'?'+q,{headers:SH}).then(function(r){if(!r.ok)throw r;return r.json();});}
+function ss(data){
+  if(!_S)return;
+  sg('results','student_id=eq.'+_S.id+'&task_id=eq.'+_S.task_id).then(function(ex){
+    var p=Object.assign({student_id:_S.id,task_id:_S.task_id,updated_at:new Date().toISOString()},data);
+    if(ex&&ex[0])fetch(SU+'/rest/v1/results?id=eq.'+ex[0].id,{method:'PATCH',headers:SH,body:JSON.stringify(p)});
+    else{p.submitted_at=new Date().toISOString();fetch(SU+'/rest/v1/results',{method:'POST',headers:SH,body:JSON.stringify(p)});}
+  }).catch(function(e){console.warn('save:',e);});
 }
-window.addEventListener('DOMContentLoaded',async()=>{
-  const sid=new URLSearchParams(location.search).get('s');
-  if(!sid){document.getElementById('authSpinner').classList.add('hidden');document.getElementById('authError').style.display='flex';return;}
-  try{
-    const rows=await sbGet('students','code=eq.'+encodeURIComponent(sid));
-    if(!rows||!rows.length){document.getElementById('authSpinner').classList.add('hidden');document.getElementById('authError').style.display='flex';return;}
-    const student=rows[0];
-    const res=await sbGet('results','student_id=eq.'+student.id+'&task_id=eq.'+student.task_id);
-    const result=(res&&res[0])?res[0]:{tries_used:0,tries_left:3,is_solved:false,answers:null,teacher_comment:null};
-    document.getElementById('wbName').textContent=student.name+' ·';
-    document.getElementById('wbTask').textContent='AcI-Bestandteile markieren';
-    document.getElementById('welcomeBar').style.display='flex';
-    if(result.teacher_comment){document.getElementById('teacherTxt').textContent=result.teacher_comment;document.getElementById('teacherMsg').style.display='block';}
-    document.getElementById('authSpinner').classList.add('hidden');
-    document.getElementById('taskWrap').style.display='block';
-    initTask(student,result);
-  }catch(e){console.error(e);document.getElementById('authSpinner').classList.add('hidden');document.getElementById('authError').style.display='flex';}
+window.addEventListener('load',function(){
+  var sid=new URLSearchParams(location.search).get('s');
+  var sp=document.getElementById('as'),ae=document.getElementById('ae'),wb=document.getElementById('wb'),tm=document.getElementById('tm'),tw=document.getElementById('tw'),wbn=document.getElementById('wbn'),tmt=document.getElementById('tmt');
+  if(!sid){sp.classList.add('off');ae.style.display='flex';return;}
+  sg('students','code=eq.'+encodeURIComponent(sid)).then(function(rows){
+    if(!rows||!rows.length){sp.classList.add('off');ae.style.display='flex';return;}
+    _S=rows[0];
+    sg('results','student_id=eq.'+_S.id+'&task_id=eq.'+_S.task_id).then(function(res){
+      _R=(res&&res[0])?res[0]:{tries_used:0,tries_left:3,is_solved:false,answers:null,teacher_comment:null};
+      wbn.textContent=_S.name+' ·';
+      wb.style.display='flex';
+      if(_R.teacher_comment){tmt.textContent=_R.teacher_comment;tm.style.display='block';}
+      sp.classList.add('off');
+      tw.style.display='block';
+      initTask(_S,_R);
+    });
+  }).catch(function(e){console.error(e);sp.classList.add('off');ae.style.display='flex';});
 });
 </script>
 </body>

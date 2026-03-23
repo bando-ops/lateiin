@@ -204,37 +204,26 @@
       .luecke-text{ font-size:15px; line-height:2.4; }
     }
   
-  .auth-spinner{position:fixed;inset:0;background:#f6f7fb;display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:14px;font-family:system-ui,sans-serif;font-size:14px;color:#6b7280;}
-  .auth-spinner.hidden{display:none;}
-  .auth-spin{width:34px;height:34px;border:3px solid #e5e7eb;border-top-color:#1976d2;border-radius:50%;animation:authspin .7s linear infinite;}
-  @keyframes authspin{to{transform:rotate(360deg);}}
-  #authError{display:none;min-height:100vh;align-items:center;justify-content:center;background:#f6f7fb;text-align:center;padding:20px;font-family:system-ui,sans-serif;}
-  #taskWrap{display:none;}
-  #welcomeBar{display:none;background:#fff;border-bottom:1px solid #e5e7eb;padding:10px 20px;align-items:center;gap:8px;font-size:14px;font-family:system-ui,sans-serif;}
-  #teacherMsg{display:none;max-width:1100px;margin:14px auto 0;padding:0 18px;}
-  .t-msg{background:#fffbeb;border:1px solid #fbbf24;border-radius:12px;padding:14px 18px;font-size:14px;color:#78350f;line-height:1.55;}
-  .t-msg b{display:block;margin-bottom:4px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#b45309;}
-
+  .asp{position:fixed;inset:0;background:#f6f7fb;display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:14px;font-family:system-ui,sans-serif;font-size:14px;color:#6b7280;}
+  .asp.off{display:none;}
+  .aspin{width:34px;height:34px;border:3px solid #e5e7eb;border-top-color:#1976d2;border-radius:50%;animation:aspin .7s linear infinite;}
+  @keyframes aspin{to{transform:rotate(360deg);}}
+  #ae{display:none;min-height:100vh;align-items:center;justify-content:center;background:#f6f7fb;text-align:center;padding:20px;font-family:system-ui,sans-serif;}
+  #tw{display:none;}
+  #wb{display:none;background:#fff;border-bottom:1px solid #e5e7eb;padding:10px 20px;align-items:center;gap:8px;font-size:14px;font-family:system-ui,sans-serif;}
+  #tm{display:none;max-width:1100px;margin:14px auto 0;padding:0 18px;}
+  .tmb{background:#fffbeb;border:1px solid #fbbf24;border-radius:12px;padding:14px 18px;font-size:14px;color:#78350f;line-height:1.55;}
+  .tmb b{display:block;margin-bottom:4px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#b45309;}
   </style>
 </head>
 <body>
-<div class="auth-spinner" id="authSpinner"><div class="auth-spin"></div><span>Wird geladen…</span></div>
-<div id="authError" style="display:none;min-height:100vh;align-items:center;justify-content:center;background:#f6f7fb;">
-  <div style="max-width:340px;text-align:center;">
-    <div style="font-size:48px;margin-bottom:14px;">🔒</div>
-    <h2 style="font-size:20px;font-weight:700;color:#1f2937;margin-bottom:8px;">Kein Zugang</h2>
-    <p style="color:#6b7280;font-size:14px;line-height:1.6;">Kein gültiger Link. Bitte wende dich an deine Lehrkraft.</p>
-  </div>
-</div>
-<div id="welcomeBar">
-  <span id="wbName" style="font-weight:700;color:#1f2937;"></span>
-  <span id="wbTask" style="color:#6b7280;margin-left:4px;"></span>
-</div>
-<div id="teacherMsg">
-  <div class="t-msg"><b>💬 Kommentar deiner Lehrkraft</b><span id="teacherTxt"></span></div>
-</div>
-<div id="taskWrap">
-
+<div class="asp" id="as"><div class="aspin"></div><span>Wird geladen…</span></div>
+<div id="ae"><div style="max-width:340px;text-align:center;"><div style="font-size:48px;margin-bottom:14px;">🔒</div>
+<h2 style="font-size:20px;font-weight:700;color:#1f2937;margin-bottom:8px;">Kein Zugang</h2>
+<p style="color:#6b7280;font-size:14px;line-height:1.6;">Kein gültiger Link. Bitte wende dich an deine Lehrkraft.</p></div></div>
+<div id="wb"><span id="wbn" style="font-weight:700;color:#1f2937;"></span><span style="color:#6b7280;margin-left:4px;">Lückentext – Grammatik</span></div>
+<div id="tm"><div class="tmb"><b>💬 Kommentar deiner Lehrkraft</b><span id="tmt"></span></div></div>
+<div id="tw">
 <div class="page">
   <main class="card">
     <h1 class="task-title">
@@ -277,8 +266,6 @@
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-
   // ── DATA ──────────────────────────────────────────────────────────
   var rows = [
     {
@@ -671,55 +658,52 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // ── INIT ──────────────────────────────────────────────────────────
 
-function initTask(student, result) {
-  var savedAssignments = (result && result.answers) ? result.answers : {};
-  var savedTries = (result && result.tries_left != null) ? result.tries_left : 3;
-  var savedSolved = (result && result.is_solved) ? result.is_solved : false;
-  triesLeft   = savedTries;
-  showResults = savedSolved || (savedTries === 0);
-  assignments = Object.assign({}, savedAssignments);
-  hintsOpened = 0;
-  checkBtn.disabled = (savedTries===0 || savedSolved);
+function initTask(student,result){
+  if(result&&result.tries_left!=null)triesLeft=result.tries_left;
+  if(result&&result.is_solved)showResults=true;
+  if(result&&result.tries_left===0)showResults=true;
+  if(result&&result.answers)assignments=Object.assign({},result.answers);
+  checkBtn.disabled=(triesLeft<=0||showResults);
   render();
   renderHints();
   updateDots();
-  if (savedSolved) setFeedback('Bereits gelöst! ✓','good');
-  if (savedTries===0 && !savedSolved) setFeedback('Keine Versuche mehr.','bad');
+  if(result&&result.is_solved)setFeedback('Bereits gelöst! ✓','good');
+  if(result&&result.tries_left===0&&!result.is_solved)setFeedback('Keine Versuche mehr.','bad');
 }
 
-  // initTask() called by auth layer
-});
+  // initTask called by auth
 </script>
-</div><!-- /taskWrap -->
+
+</div><!-- /tw -->
 <script>
-const SB_URL='https://jwvdyuvzapkiivsvkeis.supabase.co',SB_KEY='sb_publishable_DiTHFK_HaV9jN40fkLKHDA_PrzS8oKc';
-const SB_H={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
-async function sbGet(t,q){const r=await fetch(SB_URL+'/rest/v1/'+t+'?'+q,{headers:SB_H});if(!r.ok)throw new Error(await r.text());return r.json();}
-async function sbSave(sid,tid,data){
-  try{
-    const ex=await sbGet('results','student_id=eq.'+sid+'&task_id=eq.'+tid);
-    const p={student_id:sid,task_id:tid,updated_at:new Date().toISOString(),...data};
-    if(ex&&ex[0])await fetch(SB_URL+'/rest/v1/results?id=eq.'+ex[0].id,{method:'PATCH',headers:SB_H,body:JSON.stringify(p)});
-    else{p.submitted_at=new Date().toISOString();await fetch(SB_URL+'/rest/v1/results',{method:'POST',headers:SB_H,body:JSON.stringify(p)});}
-  }catch(e){console.warn('save:',e);}
+var _S=null,_R=null;
+var SU='https://jwvdyuvzapkiivsvkeis.supabase.co',SK='sb_publishable_DiTHFK_HaV9jN40fkLKHDA_PrzS8oKc',SH={'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json','Prefer':'return=representation'};
+function sg(t,q){return fetch(SU+'/rest/v1/'+t+'?'+q,{headers:SH}).then(function(r){if(!r.ok)throw r;return r.json();});}
+function ss(data){
+  if(!_S)return;
+  sg('results','student_id=eq.'+_S.id+'&task_id=eq.'+_S.task_id).then(function(ex){
+    var p=Object.assign({student_id:_S.id,task_id:_S.task_id,updated_at:new Date().toISOString()},data);
+    if(ex&&ex[0])fetch(SU+'/rest/v1/results?id=eq.'+ex[0].id,{method:'PATCH',headers:SH,body:JSON.stringify(p)});
+    else{p.submitted_at=new Date().toISOString();fetch(SU+'/rest/v1/results',{method:'POST',headers:SH,body:JSON.stringify(p)});}
+  }).catch(function(e){console.warn('save:',e);});
 }
-window.addEventListener('DOMContentLoaded',async()=>{
-  const sid=new URLSearchParams(location.search).get('s');
-  if(!sid){document.getElementById('authSpinner').classList.add('hidden');document.getElementById('authError').style.display='flex';return;}
-  try{
-    const rows=await sbGet('students','code=eq.'+encodeURIComponent(sid));
-    if(!rows||!rows.length){document.getElementById('authSpinner').classList.add('hidden');document.getElementById('authError').style.display='flex';return;}
-    const student=rows[0];
-    const res=await sbGet('results','student_id=eq.'+student.id+'&task_id=eq.'+student.task_id);
-    const result=(res&&res[0])?res[0]:{tries_used:0,tries_left:3,is_solved:false,answers:null,teacher_comment:null};
-    document.getElementById('wbName').textContent=student.name+' ·';
-    document.getElementById('wbTask').textContent='Lückentext – Grammatik';
-    document.getElementById('welcomeBar').style.display='flex';
-    if(result.teacher_comment){document.getElementById('teacherTxt').textContent=result.teacher_comment;document.getElementById('teacherMsg').style.display='block';}
-    document.getElementById('authSpinner').classList.add('hidden');
-    document.getElementById('taskWrap').style.display='block';
-    initTask(student,result);
-  }catch(e){console.error(e);document.getElementById('authSpinner').classList.add('hidden');document.getElementById('authError').style.display='flex';}
+window.addEventListener('load',function(){
+  var sid=new URLSearchParams(location.search).get('s');
+  var sp=document.getElementById('as'),ae=document.getElementById('ae'),wb=document.getElementById('wb'),tm=document.getElementById('tm'),tw=document.getElementById('tw'),wbn=document.getElementById('wbn'),tmt=document.getElementById('tmt');
+  if(!sid){sp.classList.add('off');ae.style.display='flex';return;}
+  sg('students','code=eq.'+encodeURIComponent(sid)).then(function(rows){
+    if(!rows||!rows.length){sp.classList.add('off');ae.style.display='flex';return;}
+    _S=rows[0];
+    sg('results','student_id=eq.'+_S.id+'&task_id=eq.'+_S.task_id).then(function(res){
+      _R=(res&&res[0])?res[0]:{tries_used:0,tries_left:3,is_solved:false,answers:null,teacher_comment:null};
+      wbn.textContent=_S.name+' ·';
+      wb.style.display='flex';
+      if(_R.teacher_comment){tmt.textContent=_R.teacher_comment;tm.style.display='block';}
+      sp.classList.add('off');
+      tw.style.display='block';
+      initTask(_S,_R);
+    });
+  }).catch(function(e){console.error(e);sp.classList.add('off');ae.style.display='flex';});
 });
 </script>
 </body>
