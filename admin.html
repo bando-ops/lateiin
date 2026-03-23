@@ -218,6 +218,59 @@
       font-size: 14px; outline: none; cursor: pointer;
     }
     .filter-count { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+    /* ── RESULT PREVIEW ─────────────────────────────────────── */
+    .preview-wrap { display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px; }
+    .preview-meta { font-size: 13px; color: var(--muted); margin-bottom: 4px; display: flex; gap: 16px; flex-wrap: wrap; }
+    .preview-meta strong { color: var(--text); }
+
+    /* Marking tasks (Gerundium, AcI) */
+    .preview-sentence {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px; position: relative;
+    }
+    .preview-sentence.row-correct { border-color: #3bd668; background: rgba(52,211,153,0.07); }
+    .preview-sentence.row-wrong   { border-color: #feda31; background: rgba(254,218,49,0.07); }
+    .preview-sentence.row-correct::after { content:"✓"; position:absolute; top:-10px; right:-10px; width:22px; height:22px; border-radius:50%; background:#4bd668; color:#fff; font-size:12px; font-weight:700; display:grid; place-items:center; }
+    .preview-sentence.row-wrong::after   { content:"⚠"; position:absolute; top:-10px; right:-10px; width:22px; height:22px; border-radius:50%; background:#fcde01; color:#fff; font-size:11px; font-weight:700; display:grid; place-items:center; }
+    .preview-sent-num { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; }
+    .preview-sent-text { font-size: 15px; line-height: 2.2; }
+    .preview-sent-transl { font-size: 12px; font-style: italic; color: var(--muted); margin-top: 4px; }
+    .pw-correct { background: rgba(52,211,153,0.3); border-radius: 4px; padding: 2px 5px; outline: 2px solid #22c55e; outline-offset: 1px; }
+    .pw-wrong   { background: rgba(245,158,11,0.25); border-radius: 4px; padding: 2px 5px; outline: 2px solid #f59e0b; outline-offset: 1px; }
+    .pw-neutral { padding: 2px 3px; }
+
+    /* Sorting task (Singular/Plural) */
+    .preview-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .preview-chip {
+      border-radius: 8px; padding: 6px 14px; font-size: 14px; font-weight: 600;
+      border: 1px solid var(--border); color: var(--text);
+    }
+    .preview-chip.chip-correct { background: rgba(52,211,153,0.2); border-color: #3bd668; }
+    .preview-chip.chip-wrong   { background: rgba(254,218,49,0.2);  border-color: #feda31; }
+    .preview-zone-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; margin-top: 12px; }
+
+    /* Lückentext task */
+    .preview-luecke { display: flex; flex-direction: column; gap: 10px; }
+    .preview-luecke-row {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px; position: relative;
+      font-size: 14px; line-height: 2.4;
+    }
+    .preview-luecke-row.row-correct { border-color: #3bd668; background: rgba(52,211,153,0.07); }
+    .preview-luecke-row.row-wrong   { border-color: #feda31; background: rgba(254,218,49,0.07); }
+    .preview-luecke-row.row-correct::after { content:"✓"; position:absolute; top:-10px; right:-10px; width:22px; height:22px; border-radius:50%; background:#4bd668; color:#fff; font-size:12px; font-weight:700; display:grid; place-items:center; }
+    .preview-luecke-row.row-wrong::after   { content:"⚠"; position:absolute; top:-10px; right:-10px; width:22px; height:22px; border-radius:50%; background:#fcde01; color:#fff; font-size:11px; font-weight:700; display:grid; place-items:center; }
+    .preview-blank {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 100px; padding: 2px 10px; border-radius: 6px;
+      font-weight: 700; font-size: 13px; margin: 0 3px;
+      border: 2px solid transparent;
+    }
+    .preview-blank.bl-correct { background: rgba(52,211,153,0.2); border-color: #22c55e; color: #166534; }
+    .preview-blank.bl-wrong   { background: rgba(245,158,11,0.15); border-color: #f59e0b; color: #92400e; }
+    .preview-blank.bl-empty   { background: var(--surface); border-color: var(--border2); color: var(--muted); font-style: italic; font-weight: 400; }
+
     /* ── SETUP INFO ─────────────────────────────────────────────── */
     .setup-box {
       background: var(--surface); border: 1px solid var(--border);
@@ -923,6 +976,138 @@ async function resetTries(resultId, name) {
   } catch(e) { alert(e.message); }
 }
 
+/* ── TASK DEFINITIONS FOR PREVIEW ── */
+const TASK_DATA = {
+  gerundium: {
+    sentences: [
+      {id:1, tokens:[{w:"Ad",role:null},{w:"ludendum",role:"gerundium"},{w:"paravi",role:null}], translation:"Ich habe mich zum Spielen vorbereitet."},
+      {id:2, tokens:[{w:"Pecuniae",role:null},{w:"rapiendae",role:"gerundivum"},{w:"cupidus",role:null},{w:"sum",role:null}], translation:"Ich bin begierig, Geld zu rauben."},
+      {id:3, tokens:[{w:"Puer",role:null},{w:"puniendus",role:"gerundivum"},{w:"est",role:null}], translation:"Der Junge muss bestraft werden."},
+      {id:4, tokens:[{w:"Laborando",role:"gerundium"},{w:"fatigatus",role:null},{w:"est",role:null}], translation:"Durch das Arbeiten ist er müde."},
+      {id:5, tokens:[{w:"Mihi",role:null},{w:"cupiditas",role:null},{w:"senatoris",role:null},{w:"visitandi",role:"gerundium"},{w:"erat",role:null}], translation:"Ich hatte den Wunsch, den Senator zu besuchen."},
+      {id:6, tokens:[{w:"Studium",role:null},{w:"pugnandi",role:"gerundium"},{w:"magnum",role:null},{w:"est",role:null}], translation:"Der Eifer des Kämpfens ist groß."}
+    ],
+    roleToColor: {gerundium:"blue", gerundivum:"yellow"},
+    colorLabels:  {blue:"Gerundium", yellow:"Gerundivum"}
+  },
+  aci: {
+    sentences: [
+      {id:1, tokens:[{w:"Caesar",role:null},{w:"dicit",role:"signal"},{w:"Romanos",role:"subj"},{w:"esse",role:"inf"},{w:"fortes",role:null}], translation:"Caesar sagt, dass die Römer tapfer sind."},
+      {id:2, tokens:[{w:"Pater",role:null},{w:"putat",role:"signal"},{w:"filium",role:"subj"},{w:"venire",role:"inf"},{w:"cras",role:null}], translation:"Der Vater glaubt, dass der Sohn morgen kommt."},
+      {id:3, tokens:[{w:"Senatus",role:null},{w:"audit",role:"signal"},{w:"hostes",role:"subj"},{w:"appropinquare",role:"inf"},{w:"urbem",role:null}], translation:"Der Senat hört, dass die Feinde sich der Stadt nähern."},
+      {id:4, tokens:[{w:"Magister",role:null},{w:"credit",role:"signal"},{w:"discipulos",role:"subj"},{w:"laborare",role:"inf"},{w:"diligenter",role:null}], translation:"Der Lehrer glaubt, dass die Schüler fleißig arbeiten."}
+    ],
+    roleToColor: {signal:"pink", subj:"blue", inf:"green"},
+    colorLabels:  {pink:"Signalverb", blue:"Subjektsakkusativ", green:"Infinitiv"}
+  },
+  singular_plural: {
+    words: [
+      {id:"oratori",label:"oratori",solution:"sing"},
+      {id:"oratores",label:"oratores",solution:"plur"},
+      {id:"princeps",label:"princeps",solution:"sing"},
+      {id:"corporibus",label:"corporibus",solution:"plur"},
+      {id:"nationibus",label:"nationibus",solution:"plur"},
+      {id:"solis",label:"solis",solution:"sing"},
+      {id:"militum",label:"militum",solution:"plur"},
+      {id:"lege",label:"lege",solution:"sing"},
+      {id:"virtutes",label:"virtutes",solution:"plur"},
+      {id:"vocem",label:"vocem",solution:"sing"}
+    ]
+  },
+  lueckentext: {
+    rows: [
+      {id:"r1", parts:["Die ",{blank:"r1_b1"}," (Haupt- oder Namenwörter) treten im ",{blank:"r1_b2"}," (Einzahl) und im ",{blank:"r1_b3"}," (Mehrzahl) auf. Überbegriff: ",{blank:"r1_b4"}," (Zahl)."], words:[{id:"r1_w1",label:"Substantive"},{id:"r1_w2",label:"Singular"},{id:"r1_w3",label:"Plural"},{id:"r1_w4",label:"Numerus"}], solution:{r1_b1:"Substantive",r1_b2:"Singular",r1_b3:"Plural",r1_b4:"Numerus"}},
+      {id:"r2", parts:["Man kann Substantive ",{blank:"r2_b1"}," (beugen), d. h. in verschiedene ",{blank:"r2_b2"}," (Fälle) setzen. Nur im ",{blank:"r2_b3"}," (1. Fall)."], words:[{id:"r2_w1",label:"deklinieren"},{id:"r2_w2",label:"Kasus"},{id:"r2_w3",label:"Nominativ"}], solution:{r2_b1:"deklinieren",r2_b2:"Kasus",r2_b3:"Nominativ"}},
+      {id:"r3", parts:["Jedes Substantiv gehört einer ",{blank:"r3_b1"}," an: ",{blank:"r3_b2"}," (Endung ",{blank:"r3_b4"},") und ",{blank:"r3_b3"}," (Endung ",{blank:"r3_b5"},")."], words:[{id:"r3_w1",label:"Deklinationsklasse"},{id:"r3_w2",label:"a-Deklination"},{id:"r3_w3",label:"o-Deklination"},{id:"r3_w4",label:"-a"},{id:"r3_w5",label:"-us"}], solution:{r3_b1:"Deklinationsklasse",r3_b2:"a-Deklination",r3_b3:"o-Deklination",r3_b4:"-a",r3_b5:"-us"}},
+      {id:"r4", parts:["Jedes Substantiv hat ein ",{blank:"r4_b1"}," (Geschlecht): ",{blank:"r4_b2"}," (m), ",{blank:"r4_b3"}," (f), ",{blank:"r4_b4"}," (n). a-Dekl. meist ",{blank:"r4_b5"},", o-Dekl. meist ",{blank:"r4_b6"},"."], words:[{id:"r4_w1",label:"Genus"},{id:"r4_w2",label:"Masculinum"},{id:"r4_w3",label:"Femininum"},{id:"r4_w4",label:"Neutrum"},{id:"r4_w5",label:"Feminina"},{id:"r4_w6",label:"Masculina"}], solution:{r4_b1:"Genus",r4_b2:"Masculinum",r4_b3:"Femininum",r4_b4:"Neutrum",r4_b5:"Feminina",r4_b6:"Masculina"}},
+      {id:"r5", parts:["Da es keinen ",{blank:"r5_b1"}," gibt, entscheidet man ob best., unbest. Artikel oder ",{blank:"r5_b2"}," einzusetzen ist."], words:[{id:"r5_w1",label:"Artikel"},{id:"r5_w2",label:"kein Artikel"}], solution:{r5_b1:"Artikel",r5_b2:"kein Artikel"}}
+    ]
+  }
+};
+
+function buildMarkingPreview(taskDef, answers) {
+  const {sentences, roleToColor} = taskDef;
+  let html = '';
+  sentences.forEach((s, si) => {
+    // determine per-word correctness from saved answers
+    const sentAnswers = answers[s.id] || [];
+    // rebuild token correctness
+    let sentCorrect = true;
+    let anyAnswered = sentAnswers.length > 0;
+
+    let textHtml = '';
+    s.tokens.forEach((tok, idx) => {
+      const saved = sentAnswers.find(a => a.idx === idx);
+      const userColor = saved ? saved.color : '';
+      const correctColor = tok.role ? roleToColor[tok.role] : '';
+      let cls = 'pw-neutral';
+      if (tok.role !== null || userColor) {
+        if (userColor === correctColor) cls = 'pw-correct';
+        else { cls = 'pw-wrong'; sentCorrect = false; }
+      }
+      if (tok.role !== null && !userColor) { sentCorrect = false; }
+      textHtml += `<span class="${cls}">${esc(tok.w)}</span> `;
+    });
+
+    const rowCls = !anyAnswered ? '' : sentCorrect ? 'row-correct' : 'row-wrong';
+    html += `<div class="preview-sentence ${rowCls}">
+      <div class="preview-sent-num">Satz ${s.id}</div>
+      <div class="preview-sent-text">${textHtml}</div>
+      <div class="preview-sent-transl">${esc(s.translation)}</div>
+    </div>`;
+  });
+  return html;
+}
+
+function buildSortingPreview(taskDef, answers) {
+  const {words} = taskDef;
+  // answers for singular_plural is stored as assignments obj {wordId: 'sing'|'plur'}
+  const singWords = [], plurWords = [];
+  words.forEach(w => {
+    const assigned = answers[w.id];
+    const correct = assigned === w.solution;
+    const cls = assigned ? (correct ? 'chip-correct' : 'chip-wrong') : '';
+    const chip = `<span class="preview-chip ${cls}">${esc(w.label)}</span>`;
+    if (assigned === 'sing') singWords.push(chip);
+    else if (assigned === 'plur') plurWords.push(chip);
+  });
+  let html = '';
+  if (singWords.length) html += `<div class="preview-zone-label">Singular</div><div class="preview-chips">${singWords.join('')}</div>`;
+  if (plurWords.length) html += `<div class="preview-zone-label">Plural</div><div class="preview-chips">${plurWords.join('')}</div>`;
+  if (!singWords.length && !plurWords.length) html = '<p style="color:var(--muted);font-size:14px;">Noch keine Wörter zugeordnet.</p>';
+  return html;
+}
+
+function buildLueckentextPreview(taskDef, answers) {
+  const {rows} = taskDef;
+  let html = '<div class="preview-luecke">';
+  rows.forEach((row, idx) => {
+    let rowCorrect = true, anyFilled = false;
+    // build text with blanks filled
+    let textHtml = '';
+    row.parts.forEach(p => {
+      if (typeof p === 'string') { textHtml += esc(p); return; }
+      const blankId = p.blank;
+      const wordId = answers[blankId];
+      const wordObj = row.words.find(w => w.id === wordId);
+      const label = wordObj ? wordObj.label : null;
+      const correct = label === row.solution[blankId];
+      if (label) { anyFilled = true; if (!correct) rowCorrect = false; }
+      else rowCorrect = false;
+      const cls = !label ? 'bl-empty' : correct ? 'bl-correct' : 'bl-wrong';
+      const display = label || '___';
+      textHtml += `<span class="preview-blank ${cls}">${esc(display)}</span>`;
+    });
+    const rowCls = !anyFilled ? '' : rowCorrect ? 'row-correct' : 'row-wrong';
+    html += `<div class="preview-luecke-row ${rowCls}">
+      <div class="preview-sent-num">Satz ${idx+1}</div>
+      <div style="font-size:14px;line-height:2.4;">${textHtml}</div>
+    </div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
 async function viewResult(resultId) {
   if (!sb) return;
   try {
@@ -930,28 +1115,39 @@ async function viewResult(resultId) {
     const r = rows[0]; if (!r) return;
     const stuRows = await sb.select('students', `id=eq.${r.student_id}`);
     const stu = stuRows[0] || {};
+
     document.getElementById('modalResultTitle').textContent = `Ergebnis: ${stu.name||'?'}`;
 
     const answers = r.answers || {};
-    let html = `<p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Aufgabe: <strong>${TASKS[r.task_id]||r.task_id}</strong> · Versuche: <strong>${r.tries_used}/3</strong></p>`;
+    const taskDef = TASK_DATA[r.task_id];
+    const triesUsed = r.is_solved ? Math.max(r.tries_used, 1) : r.tries_used;
+    const statusBadge = r.is_solved
+      ? '<span class="badge green">✓ Richtig gelöst</span>'
+      : r.tries_left === 0
+        ? '<span class="badge red">Versuche aufgebraucht</span>'
+        : '<span class="badge yellow">In Bearbeitung</span>';
+    const dots = [0,1,2].map(i => `<div class="tries-dot${i < triesUsed ? ' used' : ''}"></div>`).join('');
 
-    if (Object.keys(answers).length) {
-      html += '<div>';
-      for (const [sentId, words] of Object.entries(answers)) {
-        html += `<div class="result-sentence"><div class="sent-num">Satz ${sentId}</div><div class="sent-text">`;
-        (words||[]).forEach(w => {
-          const cls = w.correct === true ? 'w-correct' : w.correct === false ? 'w-wrong' : 'w-neutral';
-          html += `<span class="${cls}">${esc(w.text)}</span> `;
-        });
-        html += '</div></div>';
-      }
-      html += '</div>';
-    } else {
-      html += '<p style="color:var(--muted); font-size:14px;">Noch keine Antworten abgegeben.</p>';
+    let html = `<div class="preview-meta">
+      <span>Aufgabe: <strong>${TASKS[r.task_id]||r.task_id}</strong></span>
+      <span>${statusBadge}</span>
+      <span>Versuche: <div class="tries-dots" style="display:inline-flex;gap:5px;vertical-align:middle;">${dots}</div> <strong style="margin-left:4px;">${triesUsed}/3</strong></span>
+    </div>`;
+
+    if (!Object.keys(answers).length) {
+      html += '<p style="color:var(--muted);font-size:14px;padding:20px 0;">Noch keine Antworten abgegeben.</p>';
+    } else if (!taskDef) {
+      html += '<p style="color:var(--muted);font-size:14px;">Vorschau für diesen Aufgabentyp nicht verfügbar.</p>';
+    } else if (r.task_id === 'gerundium' || r.task_id === 'aci') {
+      html += buildMarkingPreview(taskDef, answers);
+    } else if (r.task_id === 'singular_plural') {
+      html += buildSortingPreview(taskDef, answers);
+    } else if (r.task_id === 'lueckentext') {
+      html += buildLueckentextPreview(taskDef, answers);
     }
 
     if (r.teacher_comment) {
-      html += `<div class="comment-box"><div class="comment-label">Dein Kommentar</div><div class="comment-existing">${esc(r.teacher_comment)}</div></div>`;
+      html += `<div class="comment-box" style="margin-top:16px;"><div class="comment-label">Dein Kommentar</div><div class="comment-existing">${esc(r.teacher_comment)}</div></div>`;
     }
 
     document.getElementById('modalResultBody').innerHTML = html;
