@@ -193,13 +193,31 @@
       .right { align-items: center; }
       .hint-stack { width: 100%; align-items: center; }
     }
+  
+    .spinner-overlay{position:fixed;inset:0;background:rgba(246,247,251,.9);display:flex;align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:12px;font-size:14px;color:#6b7280;}
+    .spinner-overlay.hidden{display:none;}
+    .spin{width:32px;height:32px;border:3px solid #e5e7eb;border-top-color:#1976d2;border-radius:50%;animation:_spin .7s linear infinite;}
+    @keyframes _spin{to{transform:rotate(360deg);}}
   </style>
 </head>
 <body>
+<div class="spinner-overlay" id="spinnerOverlay"><div class="spin"></div><span>Wird geladen…</span></div>
+<div id="noCodeError" style="display:none;min-height:100vh;align-items:center;justify-content:center;padding:20px;background:var(--bg);">
+  <div style="text-align:center;max-width:360px;"><div style="font-size:48px;margin-bottom:16px;">🔒</div>
+  <h2 style="font-size:20px;font-weight:700;color:#1f2937;margin-bottom:8px;">Kein Zugang</h2>
+  <p style="color:#6b7280;font-size:14px;line-height:1.6;">Kein gültiger Link. Wende dich an deine Lehrkraft.</p></div>
+</div>
+<div id="welcomeBanner" style="display:none;background:#fff;border-bottom:1px solid #e5e7eb;padding:10px 20px;align-items:center;font-size:14px;font-family:system-ui,sans-serif;">
+  <span style="font-weight:700;" id="welcomeName"></span><span style="color:#6b7280;" id="welcomeTask">Lückentext – Grammatik</span>
+</div>
+<div id="teacherCommentBox" style="display:none;max-width:1100px;margin:16px auto 0;padding:0 18px;">
+  <div style="background:#fffbeb;border:1px solid #fbbf24;border-radius:12px;padding:14px 18px;font-size:14px;color:#78350f;">
+    <strong style="display:block;margin-bottom:4px;font-size:12px;text-transform:uppercase;color:#b45309;">💬 Kommentar deiner Lehrkraft</strong>
+    <span id="teacherCommentText"></span>
+  </div>
+</div>
 
 <!-- Spinner -->
-<div class="spinner-overlay" id="spinnerOverlay">
-  <div class="spin"></div>
   <span>Wird geladen…</span>
 </div>
 
@@ -212,27 +230,11 @@
   </div>
 </div>
 
-<!-- Welcome Banner -->
-<div id="welcomeBanner">
-  <div>
-    <span class="welcome-name" id="welcomeName"></span>
-    <span class="welcome-task" id="welcomeTask"></span>
-  </div>
 </div>
 
-<!-- Teacher Comment -->
-<div id="teacherCommentBox">
-  <div class="teacher-comment">
-    <strong>💬 Kommentar deiner Lehrkraft</strong>
-    <span id="teacherCommentText"></span>
-  </div>
 </div>
 
 
-<!-- No code error -->
-<div id="noCodeError" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:20px; background:var(--bg); font-family:system-ui,sans-serif;">
-  <div style="text-align:center; max-width:360px;">
-    <div style="font-size:48px; margin-bottom:16px;">🔒</div>
     <h2 style="font-size:20px; font-weight:700; color:#1f2937; margin-bottom:8px;">Kein Zugang</h2>
     <p style="color:#6b7280; font-size:14px; line-height:1.6;">Du hast keinen persönlichen Link für diese Aufgabe. Bitte wende dich an deine Lehrkraft.</p>
   </div>
@@ -293,457 +295,37 @@
 </div><!-- /taskWrapper -->
 
 <script>
-/* ═══════════════════════════════════════════════════════════
-   AUTH LAYER
-═══════════════════════════════════════════════════════════ */
-const SUPA_URL_KEY = 'lk_supa_url';
-const SUPA_KEY_KEY = 'lk_supa_key';
-let supaUrl = localStorage.getItem(SUPA_URL_KEY) || 'https://jwvdyuvzapkiivsvkeis.supabase.co';
-let supaKey = localStorage.getItem(SUPA_KEY_KEY) || 'sb_publishable_DiTHFK_HaV9jN40fkLKHDA_PrzS8oKc';
-let sb = null;
-let currentStudent = null;
-let currentResult  = null;
+function initTask(student, result) {
 
-function initSb() {
-  if (!supaUrl || !supaKey) return;
-  sb = {
-    url: supaUrl.replace(/\/+$/, ''), key: supaKey,
-    h: {'apikey':supaKey,'Authorization':'Bearer '+supaKey,'Content-Type':'application/json','Prefer':'return=representation'},
-    async get(t,q){const r=await fetch(this.url+'/rest/v1/'+t+'?'+q,{headers:this.h});if(!r.ok)throw new Error(await r.text());return r.json();},
-    async upsert(t,d){const h={...this.h,'Prefer':'return=representation,resolution=merge-duplicates'};const r=await fetch(this.url+'/rest/v1/'+t,{method:'POST',headers:h,body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();},
-    async patch(t,m,d){const q=Object.entries(m).map(([k,v])=>k+'=eq.'+encodeURIComponent(v)).join('&');const r=await fetch(this.url+'/rest/v1/'+t+'?'+q,{method:'PATCH',headers:this.h,body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
-  };
+/* ── Auth & Supabase ── */
+const _U='https://jwvdyuvzapkiivsvkeis.supabase.co',_K='sb_publishable_DiTHFK_HaV9jN40fkLKHDA_PrzS8oKc',_H={'apikey':_K,'Authorization':'Bearer '+_K,'Content-Type':'application/json','Prefer':'return=representation'};
+async function _get(t,q){const r=await fetch(_U+'/rest/v1/'+t+'?'+q,{headers:_H});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function _save(sid,tid,data){
+  try{
+    const ex=await _get('results','student_id=eq.'+sid+'&task_id=eq.'+tid);
+    const p={student_id:sid,task_id:tid,updated_at:new Date().toISOString(),...data};
+    if(ex&&ex[0])await fetch(_U+'/rest/v1/results?id=eq.'+ex[0].id,{method:'PATCH',headers:_H,body:JSON.stringify(p)});
+    else{p.submitted_at=new Date().toISOString();await fetch(_U+'/rest/v1/results',{method:'POST',headers:_H,body:JSON.stringify(p)});}
+  }catch(e){console.warn('save:',e);}
 }
-
-window.addEventListener('DOMContentLoaded', () => {
-  initSb();
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  if (code) {
-    authenticateCode(code.toUpperCase());
-  } else {
-    // No code in URL → show error
+window.addEventListener('DOMContentLoaded',async()=>{
+  const sid=new URLSearchParams(location.search).get('s');
+  if(!sid){document.getElementById('spinnerOverlay').classList.add('hidden');document.getElementById('noCodeError').style.display='flex';return;}
+  try{
+    const rows=await _get('students','code=eq.'+encodeURIComponent(sid));
+    if(!rows||!rows.length){document.getElementById('spinnerOverlay').classList.add('hidden');document.getElementById('noCodeError').style.display='flex';return;}
+    const student=rows[0];
+    const res=await _get('results','student_id=eq.'+student.id+'&task_id=eq.'+student.task_id);
+    const result=(res&&res[0])?res[0]:{tries_used:0,tries_left:3,is_solved:false,answers:null,teacher_comment:null};
+    document.getElementById('welcomeName').textContent=student.name+' · ';
+    document.getElementById('welcomeBanner').style.display='flex';
+    if(result.teacher_comment){document.getElementById('teacherCommentText').textContent=result.teacher_comment;document.getElementById('teacherCommentBox').style.display='block';}
     document.getElementById('spinnerOverlay').classList.add('hidden');
-    document.getElementById('noCodeError').style.display = 'flex';
-  }
+    document.getElementById('taskWrapper').style.display='block';
+    initTask(student,result);
+  }catch(e){document.getElementById('spinnerOverlay').classList.add('hidden');document.getElementById('noCodeError').style.display='flex';}
 });
 
-async function authenticateCode(code) {
-  document.getElementById('spinnerOverlay').classList.remove('hidden');
-  document.getElementById('codeScreen').style.display = 'none';
-  if (!sb) {
-    currentStudent = {id:'demo', name:'Demo-Schüler', code, task_id:'lueckentext'};
-    currentResult  = {id:null, tries_used:0, tries_left:3, is_solved:false, answers:null, teacher_comment:null};
-    startTask(); return;
-  }
-  try {
-    const rows = await sb.get('students', 'code=eq.'+encodeURIComponent(code));
-    if (!rows || !rows.length) {
-      document.getElementById('spinnerOverlay').classList.add('hidden');
-      document.getElementById('codeScreen').style.display = 'flex';
-      document.getElementById('codeInput').classList.add('error');
-      document.getElementById('codeError').textContent = 'Ungültiger Code. Bitte überprüfe die Eingabe.';
-      return;
-    }
-    currentStudent = rows[0];
-    const res = await sb.get('results', 'student_id=eq.'+currentStudent.id+'&task_id=eq.'+currentStudent.task_id);
-    currentResult = (res && res.length) ? res[0] : {id:null, tries_used:0, tries_left:3, is_solved:false, answers:null, teacher_comment:null};
-    startTask();
-  } catch(e) {
-    document.getElementById('spinnerOverlay').classList.add('hidden');
-    document.getElementById('noCodeError').style.display = 'flex';
-  }
-}
-
-function startTask() {
-  document.getElementById('spinnerOverlay').classList.add('hidden');
-  document.getElementById('welcomeName').textContent = (currentStudent.name||'') + ' · ';
-  document.getElementById('welcomeTask').textContent = 'Lückentext – Grammatik';
-  document.getElementById('welcomeBanner').style.display = 'flex';
-  if (currentResult.teacher_comment) {
-    document.getElementById('teacherCommentText').textContent = currentResult.teacher_comment;
-    document.getElementById('teacherCommentBox').style.display = 'block';
-  }
-  document.getElementById('taskWrapper').style.display = 'block';
-  initTask();
-}
-
-async function saveResult(data) {
-  if (!sb || !currentStudent) return;
-  try {
-    const payload = {student_id:currentStudent.id, task_id:currentStudent.task_id||'lueckentext', updated_at:new Date().toISOString(), ...data};
-    if (currentResult && currentResult.id) {
-      await sb.patch('results', {id:currentResult.id}, payload);
-    } else {
-      payload.submitted_at = new Date().toISOString();
-      const rows = await sb.upsert('results', payload);
-      if (rows && rows[0]) currentResult = rows[0];
-    }
-  } catch(e) { console.warn('Speichern fehlgeschlagen:', e.message); }
-}
-
-/* ═══════════════════════════════════════════════════════════
-   TASK DATA
-═══════════════════════════════════════════════════════════ */
-const rows = [
-  {
-    id: "r1",
-    parts: ["Die ", {blank:"r1_b1"}, " (Haupt- oder Namenw\u00f6rter) treten im ", {blank:"r1_b2"}, " (in der Einzahl) und im ", {blank:"r1_b3"}, " (in der Mehrzahl) auf. Der \u00dcberbegriff zu Singular und Plural lautet ", {blank:"r1_b4"}, " (Zahl)."],
-    words: [{id:"r1_w1",label:"Substantive"},{id:"r1_w2",label:"Singular"},{id:"r1_w3",label:"Plural"},{id:"r1_w4",label:"Numerus"}],
-    solution: {r1_b1:"Substantive",r1_b2:"Singular",r1_b3:"Plural",r1_b4:"Numerus"}
-  },
-  {
-    id: "r2",
-    parts: ["Man kann lateinische Substantive \u2013 wie auch deutsche \u2013 ", {blank:"r2_b1"}, " (beugen), d.\u00a0h. in verschiedene ", {blank:"r2_b2"}, " (F\u00e4lle) setzen. In dieser Lektion kommen die Substantive nur im ", {blank:"r2_b3"}, " (1.\u00a0Fall) vor."],
-    words: [{id:"r2_w1",label:"deklinieren"},{id:"r2_w2",label:"Kasus"},{id:"r2_w3",label:"Nominativ"}],
-    solution: {r2_b1:"deklinieren",r2_b2:"Kasus",r2_b3:"Nominativ"}
-  },
-  {
-    id: "r3",
-    parts: ["Jedes lateinische Substantiv ist einer ", {blank:"r3_b1"}, " zugeordnet; wir unterscheiden die ", {blank:"r3_b2"}, " (1.\u00a0Deklination) und die ", {blank:"r3_b3"}, " (2.\u00a0Deklination): Zur a-Deklination geh\u00f6ren Substantive mit der Endung ", {blank:"r3_b4"}, ", zur o-Deklination solche mit der Endung ", {blank:"r3_b5"}, " im Nominativ Singular."],
-    words: [{id:"r3_w1",label:"Deklinationsklasse"},{id:"r3_w2",label:"a-Deklination"},{id:"r3_w3",label:"o-Deklination"},{id:"r3_w4",label:"-a"},{id:"r3_w5",label:"-us"}],
-    solution: {r3_b1:"Deklinationsklasse",r3_b2:"a-Deklination",r3_b3:"o-Deklination",r3_b4:"-a",r3_b5:"-us"}
-  },
-  {
-    id: "r4",
-    parts: ["Jedes lateinische Substantiv hat ein bestimmtes ", {blank:"r4_b1"}, " (grammatisches Geschlecht): ", {blank:"r4_b2"}, " (m) \u2013 m\u00e4nnlich, ", {blank:"r4_b3"}, " (f) \u2013 weiblich, ", {blank:"r4_b4"}, " (n) \u2013 s\u00e4chlich. Die Substantive der a-Deklination sind meist ", {blank:"r4_b5"}, ", die der o-Deklination auf -us meist ", {blank:"r4_b6"}, "."],
-    words: [{id:"r4_w1",label:"Genus"},{id:"r4_w2",label:"Masculinum"},{id:"r4_w3",label:"Femininum"},{id:"r4_w4",label:"Neutrum"},{id:"r4_w5",label:"Feminina"},{id:"r4_w6",label:"Masculina"}],
-    solution: {r4_b1:"Genus",r4_b2:"Masculinum",r4_b3:"Femininum",r4_b4:"Neutrum",r4_b5:"Feminina",r4_b6:"Masculina"}
-  },
-  {
-    id: "r5",
-    parts: ["Da es im Lateinischen keinen ", {blank:"r5_b1"}, " gibt, muss man bei der \u00dcbersetzung entscheiden, ob der bestimmte, der unbestimmte Artikel oder ", {blank:"r5_b2"}, " einzusetzen ist."],
-    words: [{id:"r5_w1",label:"Artikel"},{id:"r5_w2",label:"kein Artikel"}],
-    solution: {r5_b1:"Artikel",r5_b2:"kein Artikel"}
-  }
-];
-
-const hints = [
-  "Achte auf die Kategorie: Geht es um Zahl (Numerus), Fall (Kasus), Deklination oder Genus?",
-  "Die Deklinationsklassen heißen a-Deklination (Endung -a) und o-Deklination (Endung -us).",
-  "Masculinum, Femininum und Neutrum sind die drei Genera; Feminina und Masculina sind ihre Pluralformen."
-];
-
-const solutionTexts = [
-  "Satz 1: Substantive – Singular – Plural – Numerus",
-  "Satz 2: deklinieren – Kasus – Nominativ",
-  "Satz 3: Deklinationsklasse – a-Deklination – o-Deklination – -a – -us",
-  "Satz 4: Genus – Masculinum – Femininum – Neutrum – Feminina – Masculina",
-  "Satz 5: Artikel – kein Artikel"
-];
-
-/* ═══════════════════════════════════════════════════════════
-   TASK LOGIC
-═══════════════════════════════════════════════════════════ */
-function initTask() {
-  let triesLeft   = currentResult ? (currentResult.tries_left ?? 3) : 3;
-  let showResults = false;
-  let assignments = currentResult?.answers ? {...currentResult.answers} : {};
-  let hintsOpened = 0;
-  let isSolved    = currentResult?.is_solved ?? false;
-  let dragWordId=null, dragRowId=null, dragSource=null, dragBlankId=null;
-
-  const listEl     = document.getElementById('lueckeList');
-  const feedbackEl = document.getElementById('feedback');
-  const checkBtn   = document.getElementById('checkBtn');
-  const resetBtn   = document.getElementById('resetBtn');
-  const hintStackEl= document.getElementById('hintStack');
-  const solutionEl = document.getElementById('solutionText');
-
-  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  function getRow(id){ return rows.find(r=>r.id===id); }
-  function getWord(row,wId){ return row&&row.words.find(w=>w.id===wId); }
-  function getAssignedIds(rowId){ const row=getRow(rowId); if(!row)return[]; return Object.keys(assignments).filter(bid=>bid.startsWith(rowId+'_')&&row.words.some(w=>w.id===assignments[bid])).map(bid=>assignments[bid]); }
-  function blankTone(blankId){ const wId=assignments[blankId]; if(!wId||!showResults)return''; const rowId=blankId.replace(/_b\d+$/,''); const row=getRow(rowId); const wordObj=getWord(row,wId); if(!row||!wordObj)return''; return wordObj.label===row.solution[blankId]?'is-correct':'is-wrong'; }
-
-  function render() {
-    listEl.innerHTML = rows.map((row,idx) => {
-      const assigned = getAssignedIds(row.id);
-      const bankWords = row.words.filter(w=>assigned.indexOf(w.id)===-1);
-
-      // row-level status
-      let rowStatus = '';
-      if (showResults) {
-        const allCorrect = Object.keys(row.solution).every(bid => {
-          const wId = assignments[bid];
-          const wordObj = getWord(row, wId);
-          return wordObj && wordObj.label === row.solution[bid];
-        });
-        const anyFilled = Object.keys(row.solution).some(bid => assignments[bid]);
-        if (anyFilled) rowStatus = allCorrect ? 'is-correct' : 'is-wrong';
-      }
-
-      const partsHtml = row.parts.map(p => {
-        if (typeof p === 'string') return '<span>'+esc(p)+'</span>';
-        const blankId = p.blank;
-        const wId = assignments[blankId];
-        const tone = blankTone(blankId);
-        const inner = wId ? makeChip(row.id,wId,true) : '<span class="blank-placeholder"></span>';
-        return '<span class="luecke-blank'+(wId?' is-filled':'')+' '+(tone||'')+'" data-blank="'+blankId+'" data-row="'+row.id+'">'+inner+'</span>';
-      }).join('');
-
-      const bankHtml = bankWords.map(w=>makeChip(row.id,w.id,false)).join('');
-
-      return '<div class="luecke-row '+rowStatus+'">'
-        +'<div class="luecke-main">'
-          +'<div class="num-badge">'+(idx+1)+'</div>'
-          +'<div class="luecke-text">'+partsHtml+'</div>'
-        +'</div>'
-        +'<div class="luecke-bank" data-bank="'+row.id+'">'
-          +'<div class="bank-label">Ablage</div>'
-          +bankHtml
-        +'</div>'
-        +'</div>';
-    }).join('');
-    bindDrag();
-  }
-
-  function makeChip(rowId,wId,inBlank) {
-    const row=getRow(rowId), word=getWord(row,wId);
-    if(!word)return'';
-    const loc=inBlank?' data-in-blank="1"':'';
-    return '<div class="word-chip" draggable="true" data-row="'+rowId+'" data-word="'+wId+'"'+loc+'>'+esc(word.label)+'</div>';
-  }
-
-  // ── TAP / CLICK STATE ──────────────────────────────────────
-  // selectedChip = { wordId, rowId, fromBlankId|null }
-  let selectedChip = null;
-
-  function clearSelection() {
-    selectedChip = null;
-    listEl.querySelectorAll('.is-selected,.is-tap-target').forEach(el => {
-      el.classList.remove('is-selected','is-tap-target');
-    });
-  }
-
-  function bindDrag() {
-    // ── CHIP CLICKS (tap to select / deselect / return to bank) ──
-    listEl.querySelectorAll('.word-chip').forEach(chip => {
-      // Desktop drag
-      chip.addEventListener('dragstart', onChipDragStart);
-      chip.addEventListener('dragend',   onChipDragEnd);
-
-      // Tap/click
-      chip.addEventListener('click', e => {
-        e.stopPropagation();
-        if (isSolved || showResults) return;
-
-        const wordId   = chip.dataset.word;
-        const rowId    = chip.dataset.row;
-        const inBlank  = !!chip.dataset.inBlank;
-        const blankEl  = inBlank ? chip.closest('.luecke-blank') : null;
-        const blankId  = blankEl ? blankEl.dataset.blank : null;
-
-        // If already selected → deselect
-        if (selectedChip && selectedChip.wordId === wordId && selectedChip.rowId === rowId) {
-          clearSelection(); return;
-        }
-
-        // If tapping a chip that is in a blank → return it to bank directly
-        if (inBlank && !selectedChip) {
-          delete assignments[blankId];
-          clearSelection(); render(); autoSave(); return;
-        }
-
-        // Select this chip
-        clearSelection();
-        selectedChip = { wordId, rowId, fromBlankId: blankId };
-        chip.classList.add('is-selected');
-
-        // Highlight valid drop targets (blanks of same row)
-        listEl.querySelectorAll(`.luecke-blank[data-row="${rowId}"]`).forEach(b => b.classList.add('is-tap-target'));
-      });
-    });
-
-    // ── BLANK CLICKS (tap to drop selected chip) ──
-    listEl.querySelectorAll('.luecke-blank').forEach(blank => {
-      // Desktop drag
-      blank.addEventListener('dragover',  onBlankDragOver);
-      blank.addEventListener('dragleave', onBlankDragLeave);
-      blank.addEventListener('drop',      onBlankDrop);
-
-      // Tap/click
-      blank.addEventListener('click', e => {
-        if (isSolved || showResults) return;
-        if (!selectedChip) return;
-        if (blank.dataset.row !== selectedChip.rowId) { clearSelection(); return; }
-
-        const targetBlankId = blank.dataset.blank;
-        const currentInTarget = assignments[targetBlankId];
-
-        // Swap logic
-        if (currentInTarget) delete assignments[targetBlankId];
-        if (selectedChip.fromBlankId) delete assignments[selectedChip.fromBlankId];
-        if (currentInTarget && selectedChip.fromBlankId) assignments[selectedChip.fromBlankId] = currentInTarget;
-        assignments[targetBlankId] = selectedChip.wordId;
-
-        clearSelection(); render(); autoSave();
-      });
-    });
-
-    // ── BANK CLICKS (tap to return chip from blank) ──
-    listEl.querySelectorAll('.luecke-bank').forEach(bank => {
-      // Desktop drag
-      bank.addEventListener('dragover',  onBankDragOver);
-      bank.addEventListener('dragleave', onBankDragLeave);
-      bank.addEventListener('drop',      onBankDrop);
-
-      // Tap: clicking empty bank area with a selected chip from a blank → return it
-      bank.addEventListener('click', e => {
-        if (isSolved || showResults) return;
-        if (!selectedChip || !selectedChip.fromBlankId) { clearSelection(); return; }
-        if (bank.dataset.bank !== selectedChip.rowId) { clearSelection(); return; }
-        delete assignments[selectedChip.fromBlankId];
-        clearSelection(); render(); autoSave();
-      });
-    });
-
-    // Click outside → deselect
-    document.addEventListener('click', e => {
-      if (!selectedChip) return;
-      if (!e.target.closest('.luecke-row')) clearSelection();
-    }, { once: false });
-  }
-
-  function onChipDragStart(e) {
-    dragWordId=this.getAttribute('data-word'); dragRowId=this.getAttribute('data-row');
-    dragSource=this.getAttribute('data-in-blank')?'blank':'bank';
-    dragBlankId=dragSource==='blank'?(this.closest('.luecke-blank')||{}).getAttribute?.('data-blank'):null;
-    this.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',dragWordId);
-    clearSelection();
-  }
-  function onChipDragEnd(){ this.classList.remove('dragging'); }
-  function onBlankDragOver(e){ if(!dragWordId||this.getAttribute('data-row')!==dragRowId)return; e.preventDefault(); e.dataTransfer.dropEffect='move'; this.classList.add('drag-over'); }
-  function onBlankDragLeave(){ this.classList.remove('drag-over'); }
-  function onBlankDrop(e) {
-    e.preventDefault(); this.classList.remove('drag-over');
-    if(!dragWordId||this.getAttribute('data-row')!==dragRowId)return;
-    const targetBlankId=this.getAttribute('data-blank');
-    const currentInTarget=assignments[targetBlankId];
-    if(currentInTarget) delete assignments[targetBlankId];
-    if(dragSource==='blank'&&dragBlankId) delete assignments[dragBlankId];
-    if(currentInTarget&&dragSource==='blank'&&dragBlankId) assignments[dragBlankId]=currentInTarget;
-    assignments[targetBlankId]=dragWordId;
-    dragWordId=dragRowId=dragSource=dragBlankId=null;
-    render(); autoSave();
-  }
-  function onBankDragOver(e){ if(!dragWordId||this.getAttribute('data-bank')!==dragRowId)return; e.preventDefault(); e.dataTransfer.dropEffect='move'; this.classList.add('drag-over'); }
-  function onBankDragLeave(){ this.classList.remove('drag-over'); }
-  function onBankDrop(e) {
-    e.preventDefault(); this.classList.remove('drag-over');
-    if(!dragWordId||this.getAttribute('data-bank')!==dragRowId)return;
-    if(dragSource==='blank'&&dragBlankId) delete assignments[dragBlankId];
-    dragWordId=dragRowId=dragSource=dragBlankId=null;
-    render(); autoSave();
-  }
-
-  function updateDots(used) {
-    const u = used ?? Math.max(0, 3-triesLeft);
-    for(let i=0;i<3;i++) document.getElementById('dot'+i).classList.toggle('is-on', i<u);
-  }
-
-  function setFeedback(text,tone) {
-    feedbackEl.textContent=text;
-    feedbackEl.style.color=tone==='good'?'#166534':tone==='bad'?'#991b1b':'#6b7280';
-  }
-
-  function renderHints() {
-    hintStackEl.innerHTML='';
-    for(let i=0;i<hintsOpened;i++){
-      const box=document.createElement('div'); box.className='hint-box';
-      box.innerHTML='<span class="hint-title">'+(i+1)+'. Tipp</span><span>'+esc(hints[i])+'</span>';
-      hintStackEl.appendChild(box);
-    }
-    if(hintsOpened<hints.length){
-      const btn=document.createElement('button'); btn.type='button'; btn.className='hint-btn';
-      btn.textContent='💡 '+(hintsOpened+1)+'. Tipp anzeigen';
-      btn.addEventListener('click',()=>{ hintsOpened++; renderHints(); });
-      hintStackEl.appendChild(btn);
-    }
-  }
-
-  function autoSave() {
-    saveResult({answers:{...assignments}, tries_used:3-triesLeft, tries_left:triesLeft, is_solved:isSolved});
-  }
-
-  // Restore saved state
-  if (triesLeft < 3) updateDots(3-triesLeft);
-  if (isSolved) { checkBtn.disabled=true; setFeedback('Bereits gelöst! ✓','good'); }
-  if (triesLeft===0 && !isSolved) { checkBtn.disabled=true; setFeedback('Keine Versuche mehr.','bad'); showResults=true; }
-  render(); renderHints();
-
-  // ── CHECK ──────────────────────────────────────────────────
-  checkBtn.addEventListener('click', () => {
-    if(triesLeft<=0||isSolved)return;
-    const allBlanks=[];
-    rows.forEach(row=>Object.keys(row.solution).forEach(b=>allBlanks.push(b)));
-    if(!allBlanks.every(b=>assignments[b])){ setFeedback('Bitte fülle zuerst alle Lücken.','bad'); return; }
-
-    let correct=0;
-    rows.forEach(row=>Object.keys(row.solution).forEach(blankId=>{
-      const wordObj=getWord(row,assignments[blankId]);
-      if(wordObj&&wordObj.label===row.solution[blankId]) correct++;
-    }));
-
-    showResults=true; render();
-
-    if(correct===allBlanks.length){
-      isSolved=true;
-      const triesUsed=Math.max(1,3-triesLeft);
-      updateDots(triesUsed);
-      setFeedback('Alles richtig!','good');
-      checkBtn.disabled=true;
-      saveResult({answers:{...assignments},tries_used:triesUsed,tries_left:triesLeft,is_solved:true});
-      openPopup(true);
-    } else {
-      triesLeft--;
-      updateDots(3-triesLeft);
-      saveResult({answers:{...assignments},tries_used:3-triesLeft,tries_left:triesLeft,is_solved:false});
-      if(triesLeft>0){
-        setFeedback(correct+'/'+allBlanks.length+' richtig. Versuche es nochmal.','bad');
-      } else {
-        setFeedback('Keine Versuche mehr.','bad');
-        checkBtn.disabled=true;
-        saveResult({answers:{...assignments},tries_used:3,tries_left:0,is_solved:false});
-        openPopup(false);
-      }
-    }
-  });
-
-  // ── RESET ──────────────────────────────────────────────────
-  resetBtn.addEventListener('click', () => {
-    triesLeft=3; showResults=false; assignments={}; hintsOpened=0; isSolved=false;
-    checkBtn.disabled=false; solutionEl.hidden=true;
-    updateDots(0); renderHints(); render();
-    setFeedback('Zurückgesetzt.','muted');
-    saveResult({answers:{},tries_used:0,tries_left:3,is_solved:false});
-  });
-
-  // ── POPUP ──────────────────────────────────────────────────
-  function openPopup(success) {
-    document.getElementById('popupPanel').className='result-popup__panel '+(success?'is-success':'is-failure');
-    document.getElementById('popupBadge').textContent=success?'✓':'!';
-    document.getElementById('popupTitle').textContent=success?'Alles richtig gemacht':'Du hast Fehler gemacht.';
-    document.getElementById('popupMascot').textContent=success?'🎉':'🔍';
-    document.getElementById('resultPopup').hidden=false;
-    document.body.classList.add('popup-open');
-  }
-  function closePopup() {
-    document.getElementById('resultPopup').hidden=true;
-    document.body.classList.remove('popup-open');
-  }
-
-  document.getElementById('popupCloseBtn').addEventListener('click', closePopup);
-  document.getElementById('popupBackdrop').addEventListener('click', closePopup);
-  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closePopup(); });
-
-  document.getElementById('popupSolutionBtn').addEventListener('click', () => {
-    closePopup();
-    isSolved=true; showResults=true; render();
-    checkBtn.disabled=true;
-    solutionEl.innerHTML='<h3>Lösungsweg:</h3><ul>'+solutionTexts.map(t=>'<li>'+t+'</li>').join('')+'</ul>';
-    solutionEl.hidden=false;
-  });
 }
 </script>
 </body>

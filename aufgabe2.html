@@ -676,22 +676,14 @@
           opacity: 1;
         }
       }
-    </style>
+    
+    .spinner-overlay{position:fixed;inset:0;background:rgba(246,247,251,.9);display:flex;align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:12px;font-size:14px;color:#6b7280;}
+    .spinner-overlay.hidden{display:none;}
+    .spin{width:32px;height:32px;border:3px solid #e5e7eb;border-top-color:#1976d2;border-radius:50%;animation:_spin .7s linear infinite;}
+    @keyframes _spin{to{transform:rotate(360deg);}}
+  </style>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <style>
-    #codeScreen { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; background:radial-gradient(ellipse at 50% 30%,rgba(25,118,210,0.06) 0%,transparent 65%),#f6f7fb; font-family:DM Sans,system-ui,sans-serif; }
-    .code-card { width:min(420px,100%); background:#fff; border:1px solid #e5e7eb; border-radius:20px; padding:40px 36px; box-shadow:0 12px 40px rgba(0,0,0,0.08); text-align:center; }
-    .code-card .icon { font-size:48px; margin-bottom:16px; }
-    .code-card h1 { font-size:22px; font-weight:700; margin-bottom:8px; color:#1f2937; }
-    .code-card p { color:#6b7280; font-size:14px; margin-bottom:28px; line-height:1.5; }
-    .code-input { width:100%; background:#f6f7fb; border:2px solid #e5e7eb; border-radius:12px; padding:14px 16px; font-size:20px; font-weight:700; text-align:center; letter-spacing:0.1em; color:#1f2937; outline:none; transition:border-color 0.15s; text-transform:uppercase; font-family:DM Sans,monospace; }
-    .code-input:focus { border-color:#1976d2; }
-    .code-input.error { border-color:#dc2626; }
-    .btn-enter { margin-top:16px; width:100%; background:#1976d2; border:none; border-radius:12px; padding:14px; color:#fff; font-size:16px; font-weight:700; cursor:pointer; font-family:DM Sans,sans-serif; transition:background 0.15s; }
-    .btn-enter:hover { background:#135aa3; }
-    .btn-enter:disabled { opacity:0.6; cursor:not-allowed; }
-    .code-error { color:#dc2626; font-size:13px; margin-top:12px; min-height:18px; }
-    .code-hint { font-size:12px; color:#6b7280; margin-top:20px; }
     #welcomeBanner { background:#fff; border-bottom:1px solid #e5e7eb; padding:10px 20px; display:none; align-items:center; justify-content:space-between; font-size:14px; font-family:DM Sans,sans-serif; }
     .welcome-name { font-weight:700; color:#1f2937; }
     .welcome-task { color:#6b7280; }
@@ -705,8 +697,21 @@
   </style>
 </head>
   <body>
-
-<div class="spinner-overlay" id="codeSpinner"><div class="spin"></div><span>Wird geladen…</span></div>
+<div class="spinner-overlay" id="spinnerOverlay"><div class="spin"></div><span>Wird geladen…</span></div>
+<div id="noCodeError" style="display:none;min-height:100vh;align-items:center;justify-content:center;padding:20px;background:var(--bg);">
+  <div style="text-align:center;max-width:360px;"><div style="font-size:48px;margin-bottom:16px;">🔒</div>
+  <h2 style="font-size:20px;font-weight:700;color:#1f2937;margin-bottom:8px;">Kein Zugang</h2>
+  <p style="color:#6b7280;font-size:14px;line-height:1.6;">Kein gültiger Link. Wende dich an deine Lehrkraft.</p></div>
+</div>
+<div id="welcomeBanner" style="display:none;background:#fff;border-bottom:1px solid #e5e7eb;padding:10px 20px;align-items:center;font-size:14px;font-family:system-ui,sans-serif;">
+  <span style="font-weight:700;" id="welcomeName"></span><span style="color:#6b7280;" id="welcomeTask">AcI-Bestandteile</span>
+</div>
+<div id="teacherCommentBox" style="display:none;max-width:1100px;margin:16px auto 0;padding:0 18px;">
+  <div style="background:#fffbeb;border:1px solid #fbbf24;border-radius:12px;padding:14px 18px;font-size:14px;color:#78350f;">
+    <strong style="display:block;margin-bottom:4px;font-size:12px;text-transform:uppercase;color:#b45309;">💬 Kommentar deiner Lehrkraft</strong>
+    <span id="teacherCommentText"></span>
+  </div>
+</div>
 
     <h1>Aufgabe öffnen</h1>
     <p>Gib deinen persönlichen Zugangscode ein, den du von deiner Lehrkraft erhalten hast.</p>
@@ -717,18 +722,10 @@
   </div>
 </div>
 
-<div id="welcomeBanner">
-  <div><span class="welcome-name" id="welcomeName"></span><span class="welcome-task" id="welcomeTask"></span></div>
 </div>
-<div id="teacherCommentBox">
-  <div class="teacher-comment"><strong>💬 Kommentar deiner Lehrkraft</strong><span id="teacherCommentText"></span></div>
 </div>
 
 
-<!-- No code error -->
-<div id="noCodeError" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:20px; background:var(--bg); font-family:system-ui,sans-serif;">
-  <div style="text-align:center; max-width:360px;">
-    <div style="font-size:48px; margin-bottom:16px;">🔒</div>
     <h2 style="font-size:20px; font-weight:700; color:#1f2937; margin-bottom:8px;">Kein Zugang</h2>
     <p style="color:#6b7280; font-size:14px; line-height:1.6;">Du hast keinen persönlichen Link für diese Aufgabe. Bitte wende dich an deine Lehrkraft.</p>
   </div>
@@ -887,6 +884,8 @@
     <!-- /.page -->
 
     <script>
+function initTask(student, result) {
+
       /* ==========================================================================
    1. KONFIGURATION & DATEN
    ========================================================================== */
@@ -1073,7 +1072,7 @@
               } else {
                 span.dataset.color = activeColor;
               }
-              saveResult2({answers:collectAnswers2(),tries_used:3-triesLeft,tries_left:triesLeft,is_solved:false});
+              _save(student.id, student.task_id, {answers:collectAnswers2(),tries_used:3-triesLeft,tries_left:triesLeft,is_solved:false});
             });
 
             textLine.appendChild(span);
@@ -1224,7 +1223,7 @@
           isSolved = true;
           applyStatusToItems(true);
           feedbackMsg("Alles richtig!", "good");
-          saveResult2({answers:collectAnswers2(),tries_used:3-triesLeft,tries_left:triesLeft,is_solved:true});
+          _save(student.id, student.task_id, {answers:collectAnswers2(),tries_used:3-triesLeft,tries_left:triesLeft,is_solved:true});
           openResultPopup("success");
         } else {
           triesLeft--;
@@ -1232,11 +1231,11 @@
 
           if (triesLeft > 0) {
             feedbackMsg("Das ist noch nicht richtig.", "bad");
-            saveResult2({answers:collectAnswers2(),tries_used:3-triesLeft,tries_left:triesLeft,is_solved:false});
+            _save(student.id, student.task_id, {answers:collectAnswers2(),tries_used:3-triesLeft,tries_left:triesLeft,is_solved:false});
           } else {
             applyStatusToItems(false);
             feedbackMsg("Keine Versuche mehr.", "bad");
-            saveResult2({answers:collectAnswers2(),tries_used:3,tries_left:0,is_solved:false});
+            _save(student.id, student.task_id, {answers:collectAnswers2(),tries_used:3,tries_left:0,is_solved:false});
             checkBtn2.disabled = true;
             openResultPopup("failure");
           }
@@ -1456,133 +1455,40 @@
    ========================================================================== */
       buildMarkArea();
       updateTriesUI();
-    </script>
-  </div><!-- /taskWrapper -->
-<script>
-/* ── SUPABASE AUTH LAYER ─────────────────────────────── */
-const SUPA_URL_KEY = 'lk_supa_url';
-const SUPA_KEY_KEY = 'lk_supa_key';
-let supaUrl = localStorage.getItem(SUPA_URL_KEY) || 'https://jwvdyuvzapkiivsvkeis.supabase.co';
-let supaKey = localStorage.getItem(SUPA_KEY_KEY) || 'sb_publishable_DiTHFK_HaV9jN40fkLKHDA_PrzS8oKc';
-let sb2 = null;
-let currentStudent = null;
-let currentResult  = null;
-
-function initSb2() {
-  if (!supaUrl || !supaKey) return;
-  sb2 = {
-    url: supaUrl.replace(/\/+$/, ''), key: supaKey,
-    h: {'apikey':supaKey,'Authorization':'Bearer '+supaKey,'Content-Type':'application/json','Prefer':'return=representation'},
-    async get(t,q){const r=await fetch(this.url+'/rest/v1/'+t+'?'+q,{headers:this.h});if(!r.ok)throw new Error(await r.text());return r.json();},
-    async upsert(t,d){const h={...this.h,'Prefer':'return=representation,resolution=merge-duplicates'};const r=await fetch(this.url+'/rest/v1/'+t,{method:'POST',headers:h,body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();},
-    async patch(t,m,d){const q=Object.entries(m).map(([k,v])=>k+'=eq.'+encodeURIComponent(v)).join('&');const r=await fetch(this.url+'/rest/v1/'+t+'?'+q,{method:'PATCH',headers:this.h,body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
-  };
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  initSb();
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  if (code) {
-    authenticateCode(code.toUpperCase());
-  } else {
-    // No code in URL → show error
-    document.getElementById('spinnerOverlay').classList.add('hidden');
-    document.getElementById('noCodeError').style.display = 'flex';
-  }
-});
-
-async function authenticateCode2(code){
-  document.getElementById('codeSpinner').classList.remove('hidden');
-  document.getElementById('codeScreen').style.display='none';
-  if(!sb2){
-    currentStudent={id:'demo',name:'Demo-Schüler',code,task_id:'aci'};
-    currentResult={id:null,tries_used:0,tries_left:3,is_solved:false,answers:null,teacher_comment:null};
-    startTask2();return;
-  }
-  try{
-    const rows=await sb2.get('students','code=eq.'+encodeURIComponent(code));
-    if(!rows||!rows.length){
-      document.getElementById('codeSpinner').classList.add('hidden');
-      document.getElementById('codeScreen').style.display='flex';
-      document.getElementById('codeInput').classList.add('error');
-      document.getElementById('codeError').textContent='Ungültiger Code. Bitte überprüfe die Eingabe.';
-      return;
-    }
-    currentStudent=rows[0];
-    const res=await sb2.get('results','student_id=eq.'+currentStudent.id+'&task_id=eq.'+currentStudent.task_id);
-    currentResult=(res&&res.length)?res[0]:{id:null,tries_used:0,tries_left:3,is_solved:false,answers:null,teacher_comment:null};
-    startTask2();
-  }catch(e){
-    document.getElementById('codeSpinner').classList.add('hidden');
-    document.getElementById('codeScreen').style.display='flex';
-    document.getElementById('codeError').textContent='Verbindungsfehler: '+e.message;
-  }
-}
-
-function startTask2(){
-  document.getElementById('codeSpinner').classList.add('hidden');
-  document.getElementById('welcomeName').textContent=(currentStudent.name||'')+' · ';
-  document.getElementById('welcomeTask').textContent='AcI-Bestandteile markieren';
-  document.getElementById('welcomeBanner').style.display='flex';
-  if(currentResult.teacher_comment){
-    document.getElementById('teacherCommentText').textContent=currentResult.teacher_comment;
-    document.getElementById('teacherCommentBox').style.display='block';
-  }
-  document.getElementById('taskWrapper').style.display='block';
-  // Restore state
-  if(currentResult){
-    triesLeft=currentResult.tries_left??3;
-    isSolved=currentResult.is_solved??false;
-    if(currentResult.tries_used){
-      const fc=Math.max(0,Math.min(3,currentResult.tries_used));
-      document.querySelectorAll('#task2 .dot').forEach((d,i)=>d.classList.toggle('is-on',i<fc));
-    }
-    if(currentResult.answers){
-      restoreAnswers2(currentResult.answers);
-    }
-    if(isSolved){feedbackMsg('Bereits gelöst! ✓','good');checkBtn2.textContent='Weiter';}
-    if(triesLeft===0&&!isSolved){checkBtn2.disabled=true;feedbackMsg('Keine Versuche mehr.','bad');}
-  }
-}
-
-function restoreAnswers2(answers){
-  sentences.forEach(s=>{
-    const sentAnswers=answers[s.id];
-    if(!sentAnswers)return;
-    s.tokens.forEach((tok,idx)=>{
-      if(tok.isPunct)return;
-      const saved=sentAnswers.find(a=>a.idx===idx);
-      if(!saved||!saved.color)return;
-      const span=markArea.querySelector('.word[data-sentence-id="'+s.id+'"][data-token-idx="'+idx+'"]');
-      if(span)span.dataset.color=saved.color;
-    });
-  });
-}
-
-function collectAnswers2(){
-  const answers={};
-  sentences.forEach(s=>{
-    answers[s.id]=s.tokens.map((tok,idx)=>{
-      if(tok.isPunct)return null;
-      const span=markArea.querySelector('.word[data-sentence-id="'+s.id+'"][data-token-idx="'+idx+'"]');
-      const color=span?span.dataset.color:'';
-      const correctColor=tok.role?roleToColor[tok.role]:'';
-      return{idx,text:tok.w,color,correct:color&&correctColor?color===correctColor:null};
-    }).filter(Boolean);
-  });
-  return answers;
-}
-
-async function saveResult2(data){
-  if(!sb2||!currentStudent)return;
-  try{
-    const payload={student_id:currentStudent.id,task_id:currentStudent.task_id||'aci',updated_at:new Date().toISOString(),...data};
-    if(currentResult&&currentResult.id){await sb2.patch('results',{id:currentResult.id},payload);}
-    else{payload.submitted_at=new Date().toISOString();const rows=await sb2.upsert('results',payload);if(rows&&rows[0])currentResult=rows[0];}
-  }catch(e){console.warn('Speichern fehlgeschlagen:',e.message);}
+    
 }
 </script>
+  </div><!-- /taskWrapper -->
 
+<script>
+/* ── Auth & Supabase ── */
+const _U='https://jwvdyuvzapkiivsvkeis.supabase.co',_K='sb_publishable_DiTHFK_HaV9jN40fkLKHDA_PrzS8oKc',_H={'apikey':_K,'Authorization':'Bearer '+_K,'Content-Type':'application/json','Prefer':'return=representation'};
+async function _get(t,q){const r=await fetch(_U+'/rest/v1/'+t+'?'+q,{headers:_H});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function _save(sid,tid,data){
+  try{
+    const ex=await _get('results','student_id=eq.'+sid+'&task_id=eq.'+tid);
+    const p={student_id:sid,task_id:tid,updated_at:new Date().toISOString(),...data};
+    if(ex&&ex[0])await fetch(_U+'/rest/v1/results?id=eq.'+ex[0].id,{method:'PATCH',headers:_H,body:JSON.stringify(p)});
+    else{p.submitted_at=new Date().toISOString();await fetch(_U+'/rest/v1/results',{method:'POST',headers:_H,body:JSON.stringify(p)});}
+  }catch(e){console.warn('save:',e);}
+}
+window.addEventListener('DOMContentLoaded',async()=>{
+  const sid=new URLSearchParams(location.search).get('s');
+  if(!sid){document.getElementById('spinnerOverlay').classList.add('hidden');document.getElementById('noCodeError').style.display='flex';return;}
+  try{
+    const rows=await _get('students','code=eq.'+encodeURIComponent(sid));
+    if(!rows||!rows.length){document.getElementById('spinnerOverlay').classList.add('hidden');document.getElementById('noCodeError').style.display='flex';return;}
+    const student=rows[0];
+    const res=await _get('results','student_id=eq.'+student.id+'&task_id=eq.'+student.task_id);
+    const result=(res&&res[0])?res[0]:{tries_used:0,tries_left:3,is_solved:false,answers:null,teacher_comment:null};
+    document.getElementById('welcomeName').textContent=student.name+' · ';
+    document.getElementById('welcomeBanner').style.display='flex';
+    if(result.teacher_comment){document.getElementById('teacherCommentText').textContent=result.teacher_comment;document.getElementById('teacherCommentBox').style.display='block';}
+    document.getElementById('spinnerOverlay').classList.add('hidden');
+    document.getElementById('taskWrapper').style.display='block';
+    initTask(student,result);
+  }catch(e){document.getElementById('spinnerOverlay').classList.add('hidden');document.getElementById('noCodeError').style.display='flex';}
+});
+</script>
 </body>
 </html>

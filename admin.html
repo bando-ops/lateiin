@@ -783,7 +783,7 @@ function taskLink(taskId, code) {
     lueckentext:     'lueckentext.html',
   };
   const file = files[taskId] || 'aufgabe.html';
-  return base + file + '?code=' + code;
+  return base + file + '?s=' + code;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -981,10 +981,9 @@ async function addStudent() {
   if (!book) { alert('Bitte ein Buch wählen.'); return; }
   if (!task) { alert('Bitte eine Aufgabe wählen.'); return; }
   if (!sb)   { alert('Supabase nicht konfiguriert.'); return; }
-  // Auto-generate code (used for URL, not shown to user)
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const part = (n) => Array.from({length:n}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
-  const code = `${part(3)}-${part(3)}-${part(3)}`;
+  // Auto-generate short 6-char code for URL
+  const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+  const code = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
   try {
     await sb.insert('students', { name, code, task_id: task });
     closeModal('modalAddStudent');

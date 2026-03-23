@@ -631,7 +631,12 @@
           padding: 6px 12px;
         }
       }
-    </style>
+    
+    .spinner-overlay{position:fixed;inset:0;background:rgba(246,247,251,.9);display:flex;align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:12px;font-size:14px;color:#6b7280;}
+    .spinner-overlay.hidden{display:none;}
+    .spin{width:32px;height:32px;border:3px solid #e5e7eb;border-top-color:#1976d2;border-radius:50%;animation:_spin .7s linear infinite;}
+    @keyframes _spin{to{transform:rotate(360deg);}}
+  </style>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <style>
     #welcomeBanner { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 10px 20px; display: none; align-items: center; justify-content: space-between; font-size: 14px; font-family: DM Sans, sans-serif; }
@@ -647,10 +652,23 @@
   </style>
 </head>
   <body>
+<div class="spinner-overlay" id="spinnerOverlay"><div class="spin"></div><span>Wird geladen…</span></div>
+<div id="noCodeError" style="display:none;min-height:100vh;align-items:center;justify-content:center;padding:20px;background:var(--bg);">
+  <div style="text-align:center;max-width:360px;"><div style="font-size:48px;margin-bottom:16px;">🔒</div>
+  <h2 style="font-size:20px;font-weight:700;color:#1f2937;margin-bottom:8px;">Kein Zugang</h2>
+  <p style="color:#6b7280;font-size:14px;line-height:1.6;">Kein gültiger Link. Wende dich an deine Lehrkraft.</p></div>
+</div>
+<div id="welcomeBanner" style="display:none;background:#fff;border-bottom:1px solid #e5e7eb;padding:10px 20px;align-items:center;font-size:14px;font-family:system-ui,sans-serif;">
+  <span style="font-weight:700;" id="welcomeName"></span><span style="color:#6b7280;" id="welcomeTask">Singular oder Plural</span>
+</div>
+<div id="teacherCommentBox" style="display:none;max-width:1100px;margin:16px auto 0;padding:0 18px;">
+  <div style="background:#fffbeb;border:1px solid #fbbf24;border-radius:12px;padding:14px 18px;font-size:14px;color:#78350f;">
+    <strong style="display:block;margin-bottom:4px;font-size:12px;text-transform:uppercase;color:#b45309;">💬 Kommentar deiner Lehrkraft</strong>
+    <span id="teacherCommentText"></span>
+  </div>
+</div>
 
 <!-- Spinner -->
-<div class="spinner-overlay" id="spinnerOverlay">
-  <div class="spin"></div>
   <span>Wird geladen…</span>
 </div>
 
@@ -663,28 +681,12 @@
   </div>
 </div>
 
-<!-- Welcome Banner -->
-<div id="welcomeBanner">
-  <div>
-    <span class="welcome-name" id="welcomeName"></span>
-    <span class="welcome-task" id="welcomeTask"></span>
-  </div>
 </div>
 
-<!-- Teacher Comment -->
-<div id="teacherCommentBox">
-  <div class="teacher-comment">
-    <strong>💬 Kommentar deiner Lehrkraft</strong>
-    <span id="teacherCommentText"></span>
-  </div>
 </div>
 
 <!-- Task wrapper (hidden until auth) -->
 
-<!-- No code error -->
-<div id="noCodeError" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:20px; background:var(--bg); font-family:system-ui,sans-serif;">
-  <div style="text-align:center; max-width:360px;">
-    <div style="font-size:48px; margin-bottom:16px;">🔒</div>
     <h2 style="font-size:20px; font-weight:700; color:#1f2937; margin-bottom:8px;">Kein Zugang</h2>
     <p style="color:#6b7280; font-size:14px; line-height:1.6;">Du hast keinen persönlichen Link für diese Aufgabe. Bitte wende dich an deine Lehrkraft.</p>
   </div>
@@ -799,6 +801,8 @@
     </div>
 
     <script>
+function initTask(student, result) {
+
       /* ==========================================================================
    1. KONFIGURATION & DATEN (Aufgabeninhalte)
    ========================================================================== */
@@ -1113,7 +1117,7 @@
           feedbackMsg7("Alles richtig!", "good");
           setZonesEnabled7(false);
           setActiveWord7(null);
-          saveResult7({answers: assignments7, tries_used: 3-triesLeft7, tries_left: triesLeft7, is_solved: true});
+          _save(student.id, student.task_id, {answers: assignments7, tries_used: 3-triesLeft7, tries_left: triesLeft7, is_solved: true});
           openResultPopup("success");
         } else {
           triesLeft7--;
@@ -1124,7 +1128,7 @@
               "Das ist noch nicht richtig. Versuch es nochmal.",
               "bad",
             );
-            saveResult7({answers: assignments7, tries_used: 3-triesLeft7, tries_left: triesLeft7, is_solved: false});
+            _save(student.id, student.task_id, {answers: assignments7, tries_used: 3-triesLeft7, tries_left: triesLeft7, is_solved: false});
           } else {
             isChecked7 = true;
             task7WordsData.forEach((word) => {
@@ -1133,7 +1137,7 @@
             });
             renderTask7();
             feedbackMsg7("Keine Versuche mehr.", "bad");
-            saveResult7({answers: assignments7, tries_used: 3, tries_left: 0, is_solved: false});
+            _save(student.id, student.task_id, {answers: assignments7, tries_used: 3, tries_left: 0, is_solved: false});
             checkBtn7.disabled = true;
             setZonesEnabled7(false);
             setActiveWord7(null);
@@ -1224,111 +1228,40 @@
       renderTask7();
       updateTriesUI7();
       setZonesEnabled7(false);
-    </script>
+    
+}
+</script>
   </div><!-- /taskWrapper -->
 
 <script>
-/* ── SUPABASE AUTH LAYER ─────────────────────────────── */
-const SUPA_URL_KEY = 'lk_supa_url';
-const SUPA_KEY_KEY = 'lk_supa_key';
-let supaUrl = localStorage.getItem(SUPA_URL_KEY) || 'https://jwvdyuvzapkiivsvkeis.supabase.co';
-let supaKey = localStorage.getItem(SUPA_KEY_KEY) || 'sb_publishable_DiTHFK_HaV9jN40fkLKHDA_PrzS8oKc';
-let sb = null;
-let currentStudent = null;
-let currentResult  = null;
-
-function initSb() {
-  if (!supaUrl || !supaKey) return;
-  sb = {
-    url: supaUrl.replace(/\/$/, ''), key: supaKey,
-    h: { 'apikey': supaKey, 'Authorization': 'Bearer ' + supaKey, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-    async get(table, q) { const r = await fetch(this.url+'/rest/v1/'+table+'?'+q, {headers:this.h}); if(!r.ok) throw new Error(await r.text()); return r.json(); },
-    async upsert(table, data) { const h={...this.h,'Prefer':'return=representation,resolution=merge-duplicates'}; const r = await fetch(this.url+'/rest/v1/'+table, {method:'POST',headers:h,body:JSON.stringify(data)}); if(!r.ok) throw new Error(await r.text()); return r.json(); },
-    async patch(table, match, data) { const q=Object.entries(match).map(([k,v])=>k+'=eq.'+encodeURIComponent(v)).join('&'); const r=await fetch(this.url+'/rest/v1/'+table+'?'+q,{method:'PATCH',headers:this.h,body:JSON.stringify(data)}); if(!r.ok) throw new Error(await r.text()); return r.json(); }
-  };
+/* ── Auth & Supabase ── */
+const _U='https://jwvdyuvzapkiivsvkeis.supabase.co',_K='sb_publishable_DiTHFK_HaV9jN40fkLKHDA_PrzS8oKc',_H={'apikey':_K,'Authorization':'Bearer '+_K,'Content-Type':'application/json','Prefer':'return=representation'};
+async function _get(t,q){const r=await fetch(_U+'/rest/v1/'+t+'?'+q,{headers:_H});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function _save(sid,tid,data){
+  try{
+    const ex=await _get('results','student_id=eq.'+sid+'&task_id=eq.'+tid);
+    const p={student_id:sid,task_id:tid,updated_at:new Date().toISOString(),...data};
+    if(ex&&ex[0])await fetch(_U+'/rest/v1/results?id=eq.'+ex[0].id,{method:'PATCH',headers:_H,body:JSON.stringify(p)});
+    else{p.submitted_at=new Date().toISOString();await fetch(_U+'/rest/v1/results',{method:'POST',headers:_H,body:JSON.stringify(p)});}
+  }catch(e){console.warn('save:',e);}
 }
-
-window.addEventListener('DOMContentLoaded', () => {
-  initSb();
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  if (code) {
-    authenticateCode(code.toUpperCase());
-  } else {
-    // No code in URL → show error
+window.addEventListener('DOMContentLoaded',async()=>{
+  const sid=new URLSearchParams(location.search).get('s');
+  if(!sid){document.getElementById('spinnerOverlay').classList.add('hidden');document.getElementById('noCodeError').style.display='flex';return;}
+  try{
+    const rows=await _get('students','code=eq.'+encodeURIComponent(sid));
+    if(!rows||!rows.length){document.getElementById('spinnerOverlay').classList.add('hidden');document.getElementById('noCodeError').style.display='flex';return;}
+    const student=rows[0];
+    const res=await _get('results','student_id=eq.'+student.id+'&task_id=eq.'+student.task_id);
+    const result=(res&&res[0])?res[0]:{tries_used:0,tries_left:3,is_solved:false,answers:null,teacher_comment:null};
+    document.getElementById('welcomeName').textContent=student.name+' · ';
+    document.getElementById('welcomeBanner').style.display='flex';
+    if(result.teacher_comment){document.getElementById('teacherCommentText').textContent=result.teacher_comment;document.getElementById('teacherCommentBox').style.display='block';}
     document.getElementById('spinnerOverlay').classList.add('hidden');
-    document.getElementById('noCodeError').style.display = 'flex';
-  }
+    document.getElementById('taskWrapper').style.display='block';
+    initTask(student,result);
+  }catch(e){document.getElementById('spinnerOverlay').classList.add('hidden');document.getElementById('noCodeError').style.display='flex';}
 });
-
-async function authenticateCode(code) {
-  document.getElementById('spinnerOverlay').classList.remove('hidden');
-  document.getElementById('codeScreen').style.display = 'none';
-  if (!sb) {
-    currentStudent = {id:'demo', name:'Demo-Schüler', code, task_id:'singular_plural'};
-    currentResult  = {id:null, tries_used:0, tries_left:3, is_solved:false, answers:null, teacher_comment:null};
-    startTask(); return;
-  }
-  try {
-    const rows = await sb.get('students', 'code=eq.'+encodeURIComponent(code));
-    if (!rows || !rows.length) {
-      document.getElementById('spinnerOverlay').classList.add('hidden');
-      document.getElementById('codeScreen').style.display = 'flex';
-      document.getElementById('codeInput').classList.add('error');
-      document.getElementById('codeError').textContent = 'Ungültiger Code. Bitte überprüfe die Eingabe.';
-      return;
-    }
-    currentStudent = rows[0];
-    const res = await sb.get('results', 'student_id=eq.'+currentStudent.id+'&task_id=eq.'+currentStudent.task_id);
-    currentResult = (res && res.length) ? res[0] : {id:null, tries_used:0, tries_left:3, is_solved:false, answers:null, teacher_comment:null};
-    startTask();
-  } catch(e) {
-    document.getElementById('spinnerOverlay').classList.add('hidden');
-    document.getElementById('noCodeError').style.display = 'flex';
-  }
-}
-
-function startTask() {
-  document.getElementById('spinnerOverlay').classList.add('hidden');
-  document.getElementById('welcomeName').textContent = (currentStudent.name || '') + ' · ';
-  document.getElementById('welcomeTask').textContent = 'Singular oder Plural';
-  document.getElementById('welcomeBanner').style.display = 'flex';
-  if (currentResult.teacher_comment) {
-    document.getElementById('teacherCommentText').textContent = currentResult.teacher_comment;
-    document.getElementById('teacherCommentBox').style.display = 'block';
-  }
-  document.getElementById('taskWrapper').style.display = 'block';
-  // Restore state from saved result
-  if (currentResult) {
-    triesLeft7 = currentResult.tries_left ?? 3;
-    if (currentResult.tries_used) {
-      const failedCount = Math.max(0, Math.min(3, currentResult.tries_used));
-      document.querySelectorAll('#task7 .dot').forEach((d,i) => d.classList.toggle('is-on', i < failedCount));
-    }
-    isSolved7 = currentResult.is_solved ?? false;
-    if (currentResult.answers) {
-      Object.assign(assignments7, currentResult.answers);
-      renderTask7();
-    }
-    if (isSolved7) { feedbackMsg7('Bereits gelöst! ✓', 'good'); checkBtn7.textContent = 'Weiter'; }
-    if (triesLeft7 === 0 && !isSolved7) { checkBtn7.disabled = true; feedbackMsg7('Keine Versuche mehr.', 'bad'); isChecked7 = true; task7WordsData.forEach(w => { w._status = assignments7[w.id] === w.solution ? 'correct' : 'wrong'; }); renderTask7(); setZonesEnabled7(false); }
-  }
-}
-
-async function saveResult7(data) {
-  if (!sb || !currentStudent) return;
-  try {
-    const payload = { student_id: currentStudent.id, task_id: currentStudent.task_id || 'singular_plural', updated_at: new Date().toISOString(), ...data };
-    if (currentResult && currentResult.id) {
-      await sb.patch('results', {id: currentResult.id}, payload);
-    } else {
-      payload.submitted_at = new Date().toISOString();
-      const rows = await sb.upsert('results', payload);
-      if (rows && rows[0]) currentResult = rows[0];
-    }
-  } catch(e) { console.warn('Speichern fehlgeschlagen:', e.message); }
-}
 </script>
-
 </body>
 </html>

@@ -77,6 +77,11 @@
     .spinner-overlay.hidden { display: none; }
     .spin { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+  
+    .spinner-overlay{position:fixed;inset:0;background:rgba(246,247,251,.9);display:flex;align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:12px;font-size:14px;color:#6b7280;}
+    .spinner-overlay.hidden{display:none;}
+    .spin{width:32px;height:32px;border:3px solid #e5e7eb;border-top-color:#1976d2;border-radius:50%;animation:_spin .7s linear infinite;}
+    @keyframes _spin{to{transform:rotate(360deg);}}
   </style>
 
   <!-- Aufgabe styles (inline from aufgabe_gerundium) -->
@@ -171,10 +176,23 @@
   </style>
 </head>
 <body>
+<div class="spinner-overlay" id="spinnerOverlay"><div class="spin"></div><span>Wird geladen…</span></div>
+<div id="noCodeError" style="display:none;min-height:100vh;align-items:center;justify-content:center;padding:20px;background:var(--bg);">
+  <div style="text-align:center;max-width:360px;"><div style="font-size:48px;margin-bottom:16px;">🔒</div>
+  <h2 style="font-size:20px;font-weight:700;color:#1f2937;margin-bottom:8px;">Kein Zugang</h2>
+  <p style="color:#6b7280;font-size:14px;line-height:1.6;">Kein gültiger Link. Wende dich an deine Lehrkraft.</p></div>
+</div>
+<div id="welcomeBanner" style="display:none;background:#fff;border-bottom:1px solid #e5e7eb;padding:10px 20px;align-items:center;font-size:14px;font-family:system-ui,sans-serif;">
+  <span style="font-weight:700;" id="welcomeName"></span><span style="color:#6b7280;" id="welcomeTask">Gerundium & Gerundivum</span>
+</div>
+<div id="teacherCommentBox" style="display:none;max-width:1100px;margin:16px auto 0;padding:0 18px;">
+  <div style="background:#fffbeb;border:1px solid #fbbf24;border-radius:12px;padding:14px 18px;font-size:14px;color:#78350f;">
+    <strong style="display:block;margin-bottom:4px;font-size:12px;text-transform:uppercase;color:#b45309;">💬 Kommentar deiner Lehrkraft</strong>
+    <span id="teacherCommentText"></span>
+  </div>
+</div>
 
 <!-- Loading overlay -->
-<div class="spinner-overlay" id="spinnerOverlay">
-  <div class="spin"></div>
   <span>Wird geladen…</span>
 </div>
 
@@ -193,30 +211,16 @@
 </div>
 
 <!-- Welcome banner (shown after login) -->
-<div id="welcomeBanner" class="hidden">
-  <div>
-    <span class="welcome-name" id="welcomeName"></span>
-    <span class="welcome-task" id="welcomeTask"></span>
-  </div>
   <div id="commentNoticeWrap"></div>
 </div>
 
 <!-- Teacher comment box -->
-<div id="teacherCommentBox" style="display:none;">
-  <div class="teacher-comment">
-    <strong>💬 Kommentar deiner Lehrkraft</strong>
-    <span id="teacherCommentText"></span>
-  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════
      AUFGABE: GERUNDIUM & GERUNDIVUM
 ═══════════════════════════════════════════════════ -->
 
-<!-- No code error -->
-<div id="noCodeError" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:20px; background:var(--bg); font-family:system-ui,sans-serif;">
-  <div style="text-align:center; max-width:360px;">
-    <div style="font-size:48px; margin-bottom:16px;">🔒</div>
     <h2 style="font-size:20px; font-weight:700; color:#1f2937; margin-bottom:8px;">Kein Zugang</h2>
     <p style="color:#6b7280; font-size:14px; line-height:1.6;">Du hast keinen persönlichen Link für diese Aufgabe. Bitte wende dich an deine Lehrkraft.</p>
   </div>
@@ -302,47 +306,6 @@
 /* ═══════════════════════════════════════════════════════════
    SUPABASE CONFIG (from localStorage, shared with admin.html)
 ═══════════════════════════════════════════════════════════ */
-const SUPA_URL_KEY = 'lk_supa_url';
-const SUPA_KEY_KEY = 'lk_supa_key';
-
-let supaUrl = localStorage.getItem(SUPA_URL_KEY) || 'https://jwvdyuvzapkiivsvkeis.supabase.co';
-let supaKey = localStorage.getItem(SUPA_KEY_KEY) || 'sb_publishable_DiTHFK_HaV9jN40fkLKHDA_PrzS8oKc';
-let sb = null;
-let currentStudent = null;
-let currentResult  = null;
-
-function initSb() {
-  if (!supaUrl || !supaKey) return;
-  sb = {
-    url: supaUrl.replace(/\/$/, ''),
-    key: supaKey,
-    h: { 'apikey': supaKey, 'Authorization': 'Bearer ' + supaKey, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-    async get(table, q) {
-      const r = await fetch(`${this.url}/rest/v1/${table}?${q}`, { headers: this.h });
-      if (!r.ok) throw new Error(await r.text());
-      return r.json();
-    },
-    async upsert(table, data, onConflict) {
-      const url = onConflict ? `${this.url}/rest/v1/${table}?on_conflict=${onConflict}` : `${this.url}/rest/v1/${table}`;
-      const h = {...this.h, 'Prefer': 'return=representation,resolution=merge-duplicates'};
-      const r = await fetch(url, { method: 'POST', headers: h, body: JSON.stringify(data) });
-      if (!r.ok) throw new Error(await r.text());
-      return r.json();
-    },
-    async patch(table, match, data) {
-      const q = Object.entries(match).map(([k,v]) => `${k}=eq.${encodeURIComponent(v)}`).join('&');
-      const r = await fetch(`${this.url}/rest/v1/${table}?${q}`, { method: 'PATCH', headers: this.h, body: JSON.stringify(data) });
-      if (!r.ok) throw new Error(await r.text());
-      return r.json();
-    }
-  };
-}
-
-/* ═══════════════════════════════════════════════════════════
-   BOOT: check URL param or show code screen
-═══════════════════════════════════════════════════════════ */
-window.addEventListener('DOMContentLoaded', () => {
-  initSb();
   const params = new URLSearchParams(window.location.search);
   const code = params.get('code');
   if (code) {
@@ -355,15 +318,12 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 async function authenticateCode(code) {
-  show('spinnerOverlay'); hide('codeScreen');
-  const errEl = document.getElementById('codeError');
-  errEl.textContent = '';
-
+  show('spinnerOverlay');
   if (!sb) {
     // No supabase — demo mode (for testing without backend)
     hide('spinnerOverlay');
-    currentStudent = { id: 'demo', name: 'Demo-Schüler', code, task_id: 'gerundium' };
-    currentResult  = { id: null, tries_used: 0, tries_left: 3, is_solved: false, answers: null, teacher_comment: null };
+    student = { id: 'demo', name: 'Demo-Schüler', code, task_id: 'gerundium' };
+    result  = { id: null, tries_used: 0, tries_left: 3, is_solved: false, answers: null, teacher_comment: null };
     startTask();
     return;
   }
@@ -371,38 +331,29 @@ async function authenticateCode(code) {
   try {
     const rows = await sb.get('students', `code=eq.${encodeURIComponent(code)}`);
     if (!rows || !rows.length) {
-      hide('spinnerOverlay'); show('codeScreen');
-      document.getElementById('codeInput').classList.add('error');
-      errEl.textContent = 'Ungültiger Code. Bitte überprüfe die Eingabe.';
+      hide('spinnerOverlay');
+      document.getElementById('noCodeError').style.display = 'flex';
       return;
     }
-    currentStudent = rows[0];
+    student = rows[0];
 
     // Load or create result
-    const res = await sb.get('results', `student_id=eq.${currentStudent.id}&task_id=eq.${currentStudent.task_id}`);
+    const res = await sb.get('results', `student_id=eq.${student.id}&task_id=eq.${student.task_id}`);
     if (res && res.length) {
-      currentResult = res[0];
+      result = res[0];
     } else {
-      currentResult = { id: null, tries_used: 0, tries_left: 3, is_solved: false, answers: null, teacher_comment: null };
+      result = { id: null, tries_used: 0, tries_left: 3, is_solved: false, answers: null, teacher_comment: null };
     }
     startTask();
   } catch(e) {
-    hide('spinnerOverlay'); show('codeScreen');
-    errEl.textContent = 'Verbindungsfehler: ' + e.message;
-  }
-}
-
-function startTask() {
-  hide('spinnerOverlay');
-
-  // Welcome banner
-  document.getElementById('welcomeName').textContent = currentStudent.name + ' · ';
+    hide('spinnerOverlay');
+    document.getElementById('noCodeError').style.display = 'flex';
   document.getElementById('welcomeTask').textContent = 'Gerundium & Gerundivum';
   show('welcomeBanner', 'flex');
 
   // Teacher comment
-  if (currentResult.teacher_comment) {
-    document.getElementById('teacherCommentText').textContent = currentResult.teacher_comment;
+  if (result.teacher_comment) {
+    document.getElementById('teacherCommentText').textContent = result.teacher_comment;
     document.getElementById('teacherCommentBox').style.display = 'block';
   }
 
@@ -413,26 +364,7 @@ function startTask() {
 /* ═══════════════════════════════════════════════════════════
    SAVE RESULT TO SUPABASE
 ═══════════════════════════════════════════════════════════ */
-async function saveResult(data) {
-  if (!sb || !currentStudent) return;
-  try {
-    const payload = {
-      student_id: currentStudent.id,
-      task_id: currentStudent.task_id || 'gerundium',
-      updated_at: new Date().toISOString(),
-      ...data
-    };
-    if (currentResult && currentResult.id) {
-      await sb.patch('results', { id: currentResult.id }, payload);
-    } else {
-      payload.submitted_at = new Date().toISOString();
-      const rows = await sb.upsert('results', payload);
-      if (rows && rows[0]) currentResult = rows[0];
-    }
-  } catch(e) {
-    console.warn('Speichern fehlgeschlagen:', e.message);
-  }
-}
+
 
 /* ═══════════════════════════════════════════════════════════
    TASK DATA
@@ -475,10 +407,10 @@ const hintState = { 1: 0 };
 
 function initTask() {
   // Restore state from saved result
-  if (currentResult) {
-    triesLeft = currentResult.tries_left ?? 3;
-    triesUsed = currentResult.tries_used ?? 0;
-    isSolved  = currentResult.is_solved ?? false;
+  if (result) {
+    triesLeft = result.tries_left ?? 3;
+    triesUsed = result.tries_used ?? 0;
+    isSolved  = result.is_solved ?? false;
   }
 
   buildMarkArea();
@@ -486,8 +418,8 @@ function initTask() {
   renderHintStack(1);
 
   // Restore saved answers
-  if (currentResult && currentResult.answers) {
-    restoreAnswers(currentResult.answers);
+  if (result && result.answers) {
+    restoreAnswers(result.answers);
   }
 
   if (isSolved || triesLeft === 0) {
@@ -598,7 +530,7 @@ function collectAnswers() {
 
 function autoSaveAnswers() {
   const answers = collectAnswers();
-  saveResult({ answers, tries_used: triesUsed, tries_left: triesLeft });
+  _save(student.id, student.task_id, { answers, tries_used: triesUsed, tries_left: triesLeft });
 }
 
 function checkTask() {
@@ -620,12 +552,12 @@ function checkTask() {
     isSolved = true; triesUsed = 3 - triesLeft;
     applyStatusToItems(true);
     feedbackMsg('Alles richtig!', 'good');
-    saveResult({ answers: collectAnswers(), tries_used: triesUsed, tries_left: triesLeft, is_solved: true });
+    _save(student.id, student.task_id, { answers: collectAnswers(), tries_used: triesUsed, tries_left: triesLeft, is_solved: true });
     openResultPopup('success');
   } else {
     triesLeft--; triesUsed++;
     updateTriesUI();
-    saveResult({ answers: collectAnswers(), tries_used: triesUsed, tries_left: triesLeft, is_solved: false });
+    _save(student.id, student.task_id, { answers: collectAnswers(), tries_used: triesUsed, tries_left: triesLeft, is_solved: false });
     if (triesLeft > 0) {
       feedbackMsg('Das ist noch nicht richtig.', 'bad');
     } else {
@@ -780,6 +712,37 @@ document.getElementById('hintStack').addEventListener('click', e => {
 /* Utils */
 function show(id, display = 'block') { const el = document.getElementById(id); if (el) { el.style.display = display; el.classList.remove('hidden'); } }
 function hide(id) { const el = document.getElementById(id); if (el) { el.style.display = 'none'; el.classList.add('hidden'); } }
+</script>
+
+<script>
+/* ── Auth & Supabase ── */
+const _U='https://jwvdyuvzapkiivsvkeis.supabase.co',_K='sb_publishable_DiTHFK_HaV9jN40fkLKHDA_PrzS8oKc',_H={'apikey':_K,'Authorization':'Bearer '+_K,'Content-Type':'application/json','Prefer':'return=representation'};
+async function _get(t,q){const r=await fetch(_U+'/rest/v1/'+t+'?'+q,{headers:_H});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function _save(sid,tid,data){
+  try{
+    const ex=await _get('results','student_id=eq.'+sid+'&task_id=eq.'+tid);
+    const p={student_id:sid,task_id:tid,updated_at:new Date().toISOString(),...data};
+    if(ex&&ex[0])await fetch(_U+'/rest/v1/results?id=eq.'+ex[0].id,{method:'PATCH',headers:_H,body:JSON.stringify(p)});
+    else{p.submitted_at=new Date().toISOString();await fetch(_U+'/rest/v1/results',{method:'POST',headers:_H,body:JSON.stringify(p)});}
+  }catch(e){console.warn('save:',e);}
+}
+window.addEventListener('DOMContentLoaded',async()=>{
+  const sid=new URLSearchParams(location.search).get('s');
+  if(!sid){document.getElementById('spinnerOverlay').classList.add('hidden');document.getElementById('noCodeError').style.display='flex';return;}
+  try{
+    const rows=await _get('students','code=eq.'+encodeURIComponent(sid));
+    if(!rows||!rows.length){document.getElementById('spinnerOverlay').classList.add('hidden');document.getElementById('noCodeError').style.display='flex';return;}
+    const student=rows[0];
+    const res=await _get('results','student_id=eq.'+student.id+'&task_id=eq.'+student.task_id);
+    const result=(res&&res[0])?res[0]:{tries_used:0,tries_left:3,is_solved:false,answers:null,teacher_comment:null};
+    document.getElementById('welcomeName').textContent=student.name+' · ';
+    document.getElementById('welcomeBanner').style.display='flex';
+    if(result.teacher_comment){document.getElementById('teacherCommentText').textContent=result.teacher_comment;document.getElementById('teacherCommentBox').style.display='block';}
+    document.getElementById('spinnerOverlay').classList.add('hidden');
+    document.getElementById('taskWrapper').style.display='block';
+    initTask(student,result);
+  }catch(e){document.getElementById('spinnerOverlay').classList.add('hidden');document.getElementById('noCodeError').style.display='flex';}
+});
 </script>
 </body>
 </html>
