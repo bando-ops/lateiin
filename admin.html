@@ -346,6 +346,7 @@
   <header class="topbar">
     <div class="topbar-brand"><div class="brand-dot"></div> Latein-Dashboard</div>
     <div class="topbar-right">
+      <span id="lastRefreshed" style="font-size:11px; color:var(--muted)"></span>
       <span style="font-size:13px; color:var(--muted)">Lehrkraft</span>
       <button class="btn-ghost" onclick="doLogout()">Abmelden</button>
     </div>
@@ -727,6 +728,24 @@ function showApp() {
   else document.getElementById('configBanner').classList.add('hidden');
   loadStudents();
   loadResults();
+  startAutoRefresh();
+}
+
+/* ── Auto-Refresh every 30 seconds ── */
+let _refreshInterval = null;
+function startAutoRefresh() {
+  if (_refreshInterval) clearInterval(_refreshInterval);
+  _refreshInterval = setInterval(silentRefresh, 30000);
+}
+async function silentRefresh() {
+  // Only refresh if no modal is open and tab is visible
+  if (document.hidden) return;
+  if (!document.querySelector('.modal-backdrop:not(.hidden)') === false) return;
+  await loadStudents();
+  await loadResults();
+  // Update last-refreshed indicator
+  const el = document.getElementById('lastRefreshed');
+  if (el) el.textContent = 'Zuletzt aktualisiert: ' + new Date().toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
 }
 
 function changePassword() {
