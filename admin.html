@@ -394,6 +394,7 @@
           <thead>
             <tr>
               <th>Name</th>
+              <th>Code</th>
               <th>Persönlicher Link</th>
               <th>Zugewiesene Aufgabe</th>
               <th>Status</th>
@@ -401,7 +402,7 @@
             </tr>
           </thead>
           <tbody id="studentTable">
-            <tr><td colspan="5"><div class="empty"><div class="spinner"></div></div></td></tr>
+            <tr><td colspan="6"><div class="empty"><div class="spinner"></div></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -927,7 +928,7 @@ let _allStudents = [], _allStudentResults = [];
 
 async function loadStudents() {
   const tbody = document.getElementById('studentTable');
-  if (!sb) { tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><p>Supabase nicht konfiguriert. Gehe zu Einstellungen.</p></div></td></tr>`; return; }
+  if (!sb) { tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><p>Supabase nicht konfiguriert. Gehe zu Einstellungen.</p></div></td></tr>`; return; }
   try {
     _allStudents = await sb.select('students', 'order=created_at.asc');
     _allStudentResults = await sb.select('results', '');
@@ -944,7 +945,7 @@ function renderStudentTable() {
   const statusQ = document.getElementById('filterStudentStatus')?.value || '';
 
   if (!_allStudents.length) {
-    tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><div class="empty-icon">👥</div><p>Noch keine Schüler angelegt.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">👥</div><p>Noch keine Schüler angelegt.</p></div></td></tr>`;
     return;
   }
 
@@ -961,7 +962,7 @@ function renderStudentTable() {
     filtered.length + ' von ' + _allStudents.length + ' Schülern';
 
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><p>Keine Schüler gefunden.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><p>Keine Schüler gefunden.</p></div></td></tr>`;
     return;
   }
 
@@ -977,6 +978,7 @@ function renderStudentTable() {
       : '<span class="badge gray">Noch nicht begonnen</span>';
     return `<tr>
       <td><strong>${esc(s.name)}</strong></td>
+      <td><span class="mono">${esc(s.code)}</span></td>
       <td>
         <div class="link-copy">
           <span title="${esc(link)}">${esc(link)}</span>
