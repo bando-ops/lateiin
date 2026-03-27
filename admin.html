@@ -1014,7 +1014,7 @@ async function addStudent() {
   if (!task) { alert('Bitte eine Aufgabe wählen.'); return; }
   if (!sb)   { alert('Supabase nicht konfiguriert.'); return; }
   // Auto-generate short 6-char code for URL
-  const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   const code = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
   try {
     await sb.insert('students', { name, code, task_id: task });

@@ -1455,7 +1455,7 @@ window.addEventListener('load',function(){
   var sid=new URLSearchParams(location.search).get('s');
   var sp=document.getElementById('as'),ae=document.getElementById('ae'),wb=document.getElementById('wb'),tm=document.getElementById('tm'),tw=document.getElementById('tw'),wbn=document.getElementById('wbn'),tmt=document.getElementById('tmt');
   if(!sid){sp.classList.add('off');ae.style.display='flex';return;}
-  sg('students','code=eq.'+encodeURIComponent(sid)).then(function(rows){
+  sg('students','code=ilike.'+encodeURIComponent(sid)).then(function(rows){
     if(!rows||!rows.length){sp.classList.add('off');ae.style.display='flex';return;}
     _S=rows[0];
     sg('results','student_id=eq.'+_S.id+'&task_id=eq.'+_S.task_id).then(function(res){

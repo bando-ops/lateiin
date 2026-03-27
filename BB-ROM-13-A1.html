@@ -633,7 +633,7 @@ function startCommentPoll(){
 function doAuth(sid){
   document.getElementById('as').classList.remove('off');
   document.getElementById('codeScreen').style.display='none';
-  sg('students','code=eq.'+encodeURIComponent(sid)).then(function(rows){
+  sg('students','code=ilike.'+encodeURIComponent(sid)).then(function(rows){
     if(!rows||!rows.length){
       document.getElementById('as').classList.add('off');
       document.getElementById('codeInput').classList.add('error');
@@ -657,12 +657,12 @@ function doAuth(sid){
 window.addEventListener('load',function(){
   var sid=new URLSearchParams(location.search).get('s');
   if(sid){
-    doAuth(sid.toUpperCase());
+    doAuth(sid);
   }else{
     document.getElementById('as').classList.add('off');
     document.getElementById('codeScreen').style.display='flex';
     document.getElementById('codeBtn').addEventListener('click',function(){
-      var code=document.getElementById('codeInput').value.trim().toUpperCase();
+      var code=document.getElementById('codeInput').value.trim();
       if(code) doAuth(code);
     });
     document.getElementById('codeInput').addEventListener('keydown',function(e){
