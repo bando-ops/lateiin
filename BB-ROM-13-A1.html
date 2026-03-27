@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>BB-ROM-13-A1 – Lückentext</title>
+  <title>Grammatik Lektion 1 A</title>
   <style>
       :root { --bg:#f6f7fb; --card:#fff; --text:#1f2937; --muted:#6b7280; --border:#e5e7eb; --blue:#1976d2; --blue-dark:#135aa3; }
       *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
@@ -140,7 +140,7 @@
 <!-- Welcome bar -->
 <div id="wb">
   <span id="wbn" style="font-weight:700;color:#1f2937;"></span>
-  <span style="color:#6b7280;margin-left:4px;">BB-ROM-13-A1 – Lückentext</span>
+  <span style="color:#6b7280;margin-left:4px;">Grammatik Lektion 1 A</span>
 </div>
 
 <!-- Teacher comment -->
@@ -369,25 +369,88 @@
   }
 
   // ── DRAG & DROP ───────────────────────────────────────────────────
+    // Tap state
+  var _tapWordId = null, _tapRowId = null, _tapFromBlank = null;
+
+  function clearTap() {
+    _tapWordId = _tapRowId = _tapFromBlank = null;
+    listEl.querySelectorAll('.is-selected,.is-tap-target').forEach(function(el){
+      el.classList.remove('is-selected','is-tap-target');
+    });
+  }
+
   function bindDrag(){
-    // chips → dragstart
+    // chips → dragstart + tap/click
     listEl.querySelectorAll(".word-chip").forEach(function(chip){
       chip.addEventListener("dragstart", onChipDragStart);
       chip.addEventListener("dragend",   onChipDragEnd);
+
+      chip.addEventListener("click", function(e){
+        e.stopPropagation();
+        if (triesLeft <= 0 || showResults) return;
+        var wordId  = chip.getAttribute("data-word");
+        var rowId   = chip.getAttribute("data-row");
+        var inBlank = !!chip.getAttribute("data-in-blank");
+        var blankEl = inBlank ? chip.closest(".luecke-blank") : null;
+        var blankId = blankEl ? blankEl.getAttribute("data-blank") : null;
+
+        // Tap same chip again → deselect
+        if (_tapWordId === wordId && _tapRowId === rowId) { clearTap(); return; }
+
+        // Tap chip in blank directly → return to bank
+        if (inBlank && !_tapWordId) {
+          delete assignments[blankId];
+          clearTap(); render(); return;
+        }
+
+        // Select chip
+        clearTap();
+        _tapWordId = wordId; _tapRowId = rowId; _tapFromBlank = blankId;
+        chip.classList.add('is-selected');
+        // Highlight valid blanks
+        listEl.querySelectorAll('.luecke-blank[data-row="'+rowId+'"]').forEach(function(b){
+          b.classList.add('is-tap-target');
+        });
+      });
     });
 
-    // blanks → drop zone
+    // blanks → drop zone + tap
     listEl.querySelectorAll(".luecke-blank").forEach(function(blank){
       blank.addEventListener("dragover",  onBlankDragOver);
       blank.addEventListener("dragleave", onBlankDragLeave);
       blank.addEventListener("drop",      onBlankDrop);
+
+      blank.addEventListener("click", function(e){
+        if (triesLeft <= 0 || showResults) return;
+        if (!_tapWordId) return;
+        if (blank.getAttribute("data-row") !== _tapRowId) { clearTap(); return; }
+        var targetBlankId = blank.getAttribute("data-blank");
+        var currentInTarget = assignments[targetBlankId];
+        if (currentInTarget) delete assignments[targetBlankId];
+        if (_tapFromBlank) delete assignments[_tapFromBlank];
+        if (currentInTarget && _tapFromBlank) assignments[_tapFromBlank] = currentInTarget;
+        assignments[targetBlankId] = _tapWordId;
+        clearTap(); render();
+      });
     });
 
-    // banks → drop zone (return chips)
+    // banks → drop zone + tap (return chip)
     listEl.querySelectorAll(".luecke-bank").forEach(function(bank){
       bank.addEventListener("dragover",  onBankDragOver);
       bank.addEventListener("dragleave", onBankDragLeave);
       bank.addEventListener("drop",      onBankDrop);
+
+      bank.addEventListener("click", function(){
+        if (!_tapWordId || !_tapFromBlank) { clearTap(); return; }
+        if (bank.getAttribute("data-bank") !== _tapRowId) { clearTap(); return; }
+        delete assignments[_tapFromBlank];
+        clearTap(); render();
+      });
+    });
+
+    // Click outside → deselect
+    document.addEventListener("click", function(e){
+      if (_tapWordId && !e.target.closest(".luecke-row")) clearTap();
     });
   }
 
