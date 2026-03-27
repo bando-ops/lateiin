@@ -36,13 +36,13 @@
       .word-chip:active { cursor:grabbing; }
       .word-chip.dragging { opacity:.35; }
       .word-chip.is-selected { border-color:var(--blue); background:rgba(25,118,210,.1); transform:translateY(-2px); }
-      .luecke-blank { display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; min-width:120px; min-height:36px; margin:0 5px; padding:3px 6px; border:2px dashed #c4c9d4; background:#fff; border-radius:8px; cursor:default; transition:border-color .15s,background .15s; }
+      .luecke-blank { display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; min-width:120px; height:36px; margin:0 5px; padding:0 6px; border:2px dashed #c4c9d4; background:#fff; border-radius:8px; cursor:default; transition:border-color .15s,background .15s; overflow:hidden; }
       .luecke-blank.drag-over { border-color:var(--blue); background:rgba(25,118,210,.06); border-style:solid; }
       .luecke-blank.is-tap-target { border-color:var(--blue); border-style:solid; background:rgba(25,118,210,.07); }
-      .luecke-blank.is-filled { border-style:solid; border-color:#c4c9d4; }
+      .luecke-blank.is-filled { border-style:solid; border-color:#c4c9d4; height:36px; }
       .luecke-blank.is-correct { border-color:#3bd668 !important; background:rgba(59,214,104,.1) !important; }
       .luecke-blank.is-wrong   { border-color:#feda31 !important; background:rgba(254,218,49,.1) !important; }
-      .luecke-blank .word-chip { font-size:13px; min-height:30px; padding:3px 10px; cursor:grab; box-shadow:none; }
+      .luecke-blank .word-chip { font-size:13px; height:100%; padding:2px 8px; cursor:grab; box-shadow:none; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
       .blank-placeholder { display:block; width:100px; height:18px; }
       /* Bottombar */
       .bottombar { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-top:18px; flex-wrap:wrap; }
@@ -160,7 +160,6 @@
       <div class="hint-stack" id="hintStack"></div>
       <div class="right">
         <div class="btn-group">
-          <button id="resetBtn" class="ghost">Zurücksetzen</button>
           <button id="checkBtn" class="primary">Überprüfen</button>
         </div>
         <div class="tries">Versuche:
