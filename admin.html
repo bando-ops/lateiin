@@ -641,7 +641,7 @@ const DEFAULT_PW     = 'Latein2025';
 const TASKS = {
   gerundium:       'Gerundium & Gerundivum',
   singular_plural: 'Singular oder Plural (Aufgabe 7)',
-  lueckentext:     'BB-ROM-13-A1 – Lückentext'
+  lueckentext:     'BB-ROM-13-A1 – Lückentext (Gram. L1A)'
 };
 
 let supaUrl = '', supaKey = '', baseUrl = '', sb = null;
@@ -1210,7 +1210,7 @@ function buildSortingPreview(taskDef, answers) {
   return html;
 }
 
-function buildLueckentextPreview(taskDef, answers) {
+function buildLueckentextPreview(taskDef, answers, rowStatus) {
   const {rows} = taskDef;
   let html = '<div class="preview-luecke">';
   rows.forEach((row, idx) => {
@@ -1266,6 +1266,18 @@ async function viewResult(resultId) {
       <span>Versuche: <div class="tries-dots" style="display:inline-flex;gap:5px;vertical-align:middle;">${dots}</div> <strong style="margin-left:4px;">${triesUsed}/3</strong></span>
     </div>`;
 
+    // Show row_status progress for stepper tasks
+    if (r.row_status && r.row_status.some(function(s){ return s !== null; })) {
+      html += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:12px;">';
+      r.row_status.forEach(function(s, i) {
+        var bg = s === 'correct' ? '#3bd668' : s === 'wrong' ? '#feda31' : '#e5e7eb';
+        var label = s === 'correct' ? '✓' : s === 'wrong' ? '✕' : (i+1);
+        html += '<div style="width:32px;height:32px;border-radius:50%;background:'+bg+';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:'+(s?'#1f2937':'#9ca3af')+';">' + label + '</div>';
+        if (i < 4) html += '<div style="flex:1;height:2px;background:'+(s?'#3bd668':'#e5e7eb')+';max-width:30px;"></div>';
+      });
+      html += '</div>';
+    }
+
     if (!Object.keys(answers).length) {
       html += '<p style="color:var(--muted);font-size:14px;padding:20px 0;">Noch keine Antworten abgegeben.</p>';
     } else if (!taskDef) {
@@ -1275,7 +1287,7 @@ async function viewResult(resultId) {
     } else if (r.task_id === 'singular_plural') {
       html += buildSortingPreview(taskDef, answers);
     } else if (r.task_id === 'lueckentext') {
-      html += buildLueckentextPreview(taskDef, answers);
+      html += buildLueckentextPreview(taskDef, answers, r.row_status);
     }
 
     if (r.teacher_comment) {

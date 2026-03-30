@@ -39,10 +39,10 @@
       .luecke-blank { display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; min-width:120px; height:36px; margin:0 5px; padding:0 6px; border:2px dashed #c4c9d4; background:#fff; border-radius:8px; cursor:default; transition:border-color .15s,background .15s; overflow:hidden; }
       .luecke-blank.drag-over { border-color:var(--blue); background:rgba(25,118,210,.06); border-style:solid; }
       .luecke-blank.is-tap-target { border-color:var(--blue); border-style:solid; background:rgba(25,118,210,.07); }
-      .luecke-blank.is-filled { border-style:solid; border-color:#c4c9d4; height:36px; }
+      .luecke-blank.is-filled { border-style:solid; border-color:var(--blue); height:36px; background:#f0f6ff; }
       .luecke-blank.is-correct { border-color:#3bd668 !important; background:rgba(59,214,104,.1) !important; }
       .luecke-blank.is-wrong   { border-color:#feda31 !important; background:rgba(254,218,49,.1) !important; }
-      .luecke-blank .word-chip { font-size:13px; width:100%; height:100%; padding:2px 8px; cursor:grab; box-shadow:none; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; justify-content:center; }
+      .luecke-blank .word-chip { font-size:13px; width:100%; height:100%; padding:2px 8px; cursor:grab; box-shadow:none; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; justify-content:center; border:none; border-radius:6px; }
       .blank-placeholder { display:block; width:100px; height:18px; }
       /* Bottombar */
       .bottombar { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-top:18px; flex-wrap:wrap; }
@@ -223,7 +223,7 @@
     { id:"r4", parts:["Jedes Substantiv hat ein bestimmtes ",{blank:"r4_b1"}," (Geschlecht): ",{blank:"r4_b2"}," (m), ",{blank:"r4_b3"}," (f), ",{blank:"r4_b4"}," (n). a-Dekl. meist ",{blank:"r4_b5"},", o-Dekl. auf -us meist ",{blank:"r4_b6"},"."], words:[{id:"r4_w1",label:"Genus"},{id:"r4_w2",label:"Masculinum"},{id:"r4_w3",label:"Femininum"},{id:"r4_w4",label:"Neutrum"},{id:"r4_w5",label:"Feminina"},{id:"r4_w6",label:"Masculina"}], solution:{r4_b1:"Genus",r4_b2:"Masculinum",r4_b3:"Femininum",r4_b4:"Neutrum",r4_b5:"Feminina",r4_b6:"Masculina"} },
     { id:"r5", parts:["Da es im Lateinischen keinen ",{blank:"r5_b1"}," gibt, entscheidet man ob bestimmter, unbestimmter Artikel oder ",{blank:"r5_b2"}," einzusetzen ist."], words:[{id:"r5_w1",label:"Artikel"},{id:"r5_w2",label:"kein Artikel"}], solution:{r5_b1:"Artikel",r5_b2:"kein Artikel"} }
   ];
-  var hints = ["Achte auf die Kategorie: Geht es um Zahl (Numerus), Fall (Kasus), Deklination oder Genus?","Die Deklinationsklassen hei\u00dfen a-Deklination (Endung\u00a0-a) und o-Deklination (Endung\u00a0-us).","Masculinum, Femininum und Neutrum sind die drei Genera; Feminina und Masculina sind ihre Pluralformen."];
+  var hints = ["Lies dir im Begleitband die Seite 13 (A) durch."];
 
   // ── STATE ─────────────────────────────────────────────────────────
   var currentRowIdx = 0;
@@ -245,33 +245,68 @@
   var popupTitle=document.getElementById("popupTitle");
   var popupMascot=document.getElementById("popupMascot");
   var stepperEl=document.getElementById("stepper");
+  var viewingRowIdx = null; // null = current, number = viewing past row
 
   function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+  function shuffle(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
   function getRow(id){return rows.find(function(r){return r.id===id;});}
   function getWord(row,wId){return row&&row.words.find(function(w){return w.id===wId;});}
   function getAssignedIds(rowId){var row=getRow(rowId);if(!row)return[];return Object.keys(assignments).filter(function(bid){return bid.startsWith(rowId+"_")&&row.words.some(function(w){return w.id===assignments[bid];});}).map(function(bid){return assignments[bid];});}
   function blankTone(blankId){var wId=assignments[blankId];if(!wId||!showResults)return"";var rowId=blankId.replace(/_b\d+$/,"");var row=getRow(rowId);var wordObj=getWord(row,wId);if(!row||!wordObj)return"";return wordObj.label===row.solution[blankId]?"is-correct":"is-wrong";}
 
   // ── STEPPER ───────────────────────────────────────────────────────
+  var _viewingIdx = null;
+
   function renderStepper(){
     var html="";
     rows.forEach(function(row,idx){
       if(idx>0){var lineDone=rowStatus[idx-1]!==null;html+='<div class="step-line'+(lineDone?" done":"")+'"></div>';}
       var cls="step-btn";
-      if(idx===currentRowIdx)cls+=" active";
+      var isActive=(_viewingIdx!==null)?idx===_viewingIdx:idx===currentRowIdx;
+      if(isActive)cls+=" active";
       else if(rowStatus[idx]==="correct")cls+=" done";
       else if(rowStatus[idx]==="wrong")cls+=" wrong";
-      var label=rowStatus[idx]==="correct"?"\u2713":rowStatus[idx]==="wrong"?"\u2715":(idx+1);
-      html+='<div class="'+cls+'">'+label+"</div>";
+      var label=rowStatus[idx]==="correct"?"✓":rowStatus[idx]==="wrong"?"✕":(idx+1);
+      var clickable=rowStatus[idx]!==null;
+      var extra=clickable?' data-step="'+idx+'" style="cursor:pointer;" title="Antworten ansehen"':'';
+      html+='<div class="'+cls+'"'+extra+'>'+label+"</div>";
     });
     stepperEl.innerHTML=html;
+    stepperEl.querySelectorAll("[data-step]").forEach(function(btn){
+      btn.addEventListener("click",function(){viewPastRow(parseInt(this.getAttribute("data-step")));});
+    });
+  }
+
+  function viewPastRow(idx){
+    _viewingIdx=idx;
+    var row=rows[idx];
+    var partsHtml=row.parts.map(function(p){
+      if(typeof p==="string")return"<span>"+esc(p)+"</span>";
+      var blankId=p.blank,wId=assignments[blankId];
+      var tone="";
+      if(wId){var wo=getWord(row,wId);tone=wo&&wo.label===row.solution[blankId]?"is-correct":"is-wrong";}
+      var inner=wId?'<div class="word-chip" style="font-size:13px;width:100%;height:100%;padding:2px 8px;cursor:default;box-shadow:none;margin:0;display:flex;align-items:center;justify-content:center;border:none;border-radius:6px;">'+esc(getWord(row,wId).label)+'</div>':'<span class="blank-placeholder"></span>';
+      return'<span class="luecke-blank'+(wId?" is-filled":"")+" "+(tone||"")+'" data-blank="'+blankId+'" data-row="'+row.id+'">'+inner+"</span>";
+    }).join("");
+    var rowCls="luecke-row"+(rowStatus[idx]==="correct"?" is-correct":rowStatus[idx]==="wrong"?" is-wrong":"");
+    listEl.innerHTML='<div class="'+rowCls+'"><div class="luecke-main"><div class="num-badge">'+(idx+1)+'</div><div class="luecke-text">'+partsHtml+'</div></div><div class="luecke-bank" data-bank="'+row.id+'"><div class="bank-label" style="text-align:center;color:var(--muted);">Lesemodus</div></div></div>';
+    checkBtn.textContent="← Zurück";
+    checkBtn.disabled=false;
+    checkBtn.onclick=function(){
+      checkBtn.onclick=null;_viewingIdx=null;
+      checkBtn.textContent="Überprüfen";
+      checkBtn.disabled=(triesLeft<=0||showResults);
+      render();
+    };
+    renderStepper();
   }
 
   // ── RENDER (single row) ───────────────────────────────────────────
   function render(){
+    _viewingIdx=null;
     var row=rows[currentRowIdx];
     var assigned=getAssignedIds(row.id);
-    var bankWords=row.words.filter(function(w){return assigned.indexOf(w.id)===-1;});
+    var bankWords=shuffle(row.words.filter(function(w){return assigned.indexOf(w.id)===-1;}));
     var partsHtml=row.parts.map(function(p){
       if(typeof p==="string")return"<span>"+esc(p)+"</span>";
       var blankId=p.blank,wId=assignments[blankId],tone=blankTone(blankId);
