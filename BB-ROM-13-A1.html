@@ -234,6 +234,19 @@
   var rowStatus = [null,null,null,null,null];
   var rowTriesUsed = [0,0,0,0,0];
   var rowTryCount = 0;
+
+  function saveProgress(extraFields){
+    var data = Object.assign({
+      answers:        Object.assign({}, assignments),
+      row_status:     rowStatus.slice(),
+      row_tries:      rowTriesUsed.slice(),
+      current_row:    currentRowIdx,
+      tries_left:     triesLeft,
+      is_solved:      false
+    }, extraFields || {});
+    ss(data);
+  }
+
   var dragWordId=null,dragRowId=null,dragSource=null,dragBlankId=null;
   var _tapWordId=null,_tapRowId=null,_tapFromBlank=null;
 
@@ -427,7 +440,7 @@
       renderStepper();
       setFeedback("\u2705 Richtig!","good");
       var isLast=currentRowIdx===rows.length-1;
-      ss({answers:Object.assign({},assignments),tries_used:Math.max(1,3-triesLeft),tries_left:triesLeft,is_solved:isLast,row_status:rowStatus.slice()});
+      saveProgress({is_solved:isLast, current_row: currentRowIdx});
       // Always provide Weiter button even if popup dismissed
       checkBtn.textContent="Weiter \u2192";
       checkBtn.disabled=false;
@@ -439,7 +452,7 @@
       openRowPopup(true,!isLast);
     } else {
       triesLeft--;updateDots();
-      ss({answers:Object.assign({},assignments),tries_used:3-triesLeft,tries_left:triesLeft,is_solved:false,row_tries:rowTriesUsed.slice(),tries_left_current:triesLeft,current_row:currentRowIdx,row_status:rowStatus.slice()});
+      saveProgress();
       if(triesLeft>0){setFeedback("\u274C Noch nicht richtig.","bad");showResults=false;render();}
       else{
         rowStatus[currentRowIdx]="wrong";rowTriesUsed[currentRowIdx]=rowTryCount;renderStepper();
@@ -447,7 +460,7 @@
         checkBtn.textContent="Weiter \u2192";
         checkBtn.disabled=false;
         checkBtn.onclick=function(){checkBtn.onclick=null;goNext();};
-        ss({answers:Object.assign({},assignments),tries_used:3,tries_left:0,is_solved:false,row_tries:rowTriesUsed.slice(),tries_left_current:triesLeft,current_row:currentRowIdx,row_status:rowStatus.slice()});
+        saveProgress({tries_left:0});
         // Always provide Weiter button even if popup dismissed
         var isLast2=currentRowIdx===rows.length-1;
         checkBtn.textContent="Weiter \u2192";
@@ -536,7 +549,7 @@
     });
     summaryHtml+='</div></div>';
     document.querySelector(".task-title").insertAdjacentHTML("afterend",summaryHtml);
-    ss({answers:Object.assign({},assignments),tries_used:3-triesLeft,tries_left:triesLeft,is_solved:allCorrect,row_status:rowStatus.slice(),row_tries:rowTriesUsed.slice(),current_row:rows.length-1});
+    saveProgress({is_solved:allCorrect, current_row:rows.length});
   }
   document.getElementById("popupBackdrop").addEventListener("click",function(){
     closePopup();
@@ -545,52 +558,62 @@
 
   // ── INIT ──────────────────────────────────────────────────────────
   function initTask(student,result){
-    if(result){
+    if(result && (result.row_status || result.answers)){
       if(result.row_status)  rowStatus    = result.row_status;
       if(result.row_tries)   rowTriesUsed = result.row_tries;
       if(result.answers)     assignments  = Object.assign({}, result.answers);
 
-      // Which row to resume on
-      if(result.current_row != null){
-        currentRowIdx = Math.min(result.current_row, rows.length-1);
-      } else {
-        var fi=0;
-        for(var i=0;i<rowStatus.length;i++){ if(rowStatus[i]!==null) fi=i+1; }
-        currentRowIdx = Math.min(fi, rows.length-1);
-      }
-
-      // All rows done? Show summary immediately
-      var allDone = rowStatus.every(function(s){ return s!==null; });
-      if(allDone){
+      // current_row=rows.length means all done → summary
+      if(result.current_row >= rows.length){
         render(); renderHints(); updateDots();
         showFinalPopup();
         return;
       }
 
-      // Restore tries for current row
+      // Determine which row to show
+      if(result.current_row != null){
+        currentRowIdx = Math.min(result.current_row, rows.length - 1);
+      } else {
+        // Fallback: first incomplete row
+        currentRowIdx = 0;
+        for(var i=0;i<rowStatus.length;i++){
+          if(rowStatus[i] !== null) currentRowIdx = i+1;
+        }
+        currentRowIdx = Math.min(currentRowIdx, rows.length-1);
+      }
+
+      // Is current row already finished?
       var rowDone = rowStatus[currentRowIdx] !== null;
       if(rowDone){
-        // Shouldn't happen if allDone check above is correct, but handle gracefully
-        triesLeft=3; showResults=false;
-        checkBtn.textContent="Überprüfen"; checkBtn.disabled=false; checkBtn.onclick=null;
+        // All done rows accounted for but we're past them – go to next
+        currentRowIdx = Math.min(currentRowIdx + 1, rows.length - 1);
+        triesLeft = 3;
+        checkBtn.textContent = "\u00dcberpr\u00fcfen";
+        checkBtn.disabled = false;
+        checkBtn.onclick = null;
       } else {
-        // In-progress row: restore exact tries remaining
-        triesLeft = (result.tries_left_current != null) ? result.tries_left_current : 3;
-        showResults = false;
-        if(triesLeft<=0){
-          // Was on last try, failed - show Weiter
-          checkBtn.textContent="Weiter →";
-          checkBtn.disabled=false;
-          var _i=currentRowIdx;
-          checkBtn.onclick=function(){checkBtn.onclick=null;_i>=rows.length-1?showFinalPopup():goNext();};
+        // Resume in-progress row
+        triesLeft = (result.tries_left != null) ? result.tries_left : 3;
+        if(triesLeft <= 0){
+          // Row was failed, show Weiter button
+          checkBtn.textContent = "Weiter \u2192";
+          checkBtn.disabled = false;
+          checkBtn.onclick = function(){checkBtn.onclick=null; goNext();};
         } else {
-          checkBtn.textContent="Überprüfen"; checkBtn.disabled=false; checkBtn.onclick=null;
+          checkBtn.textContent = "\u00dcberpr\u00fcfen";
+          checkBtn.disabled = false;
+          checkBtn.onclick = null;
         }
       }
     } else {
-      triesLeft=3; showResults=false;
-      checkBtn.textContent="Überprüfen"; checkBtn.disabled=false; checkBtn.onclick=null;
+      // Fresh start
+      triesLeft = 3;
+      currentRowIdx = 0;
+      checkBtn.textContent = "\u00dcberpr\u00fcfen";
+      checkBtn.disabled = false;
+      checkBtn.onclick = null;
     }
+    showResults = false;
     render(); renderHints(); updateDots();
   }
 </script>
