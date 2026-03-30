@@ -270,85 +270,27 @@
   function blankTone(blankId){var wId=assignments[blankId];if(!wId||!showResults)return"";var rowId=blankId.replace(/_b\d+$/,"");var row=getRow(rowId);var wordObj=getWord(row,wId);if(!row||!wordObj)return"";return wordObj.label===row.solution[blankId]?"is-correct":"is-wrong";}
 
   // ── STEPPER ───────────────────────────────────────────────────────
-  var _viewingIdx = null;
 
   function renderStepper(){
     var html="";
     rows.forEach(function(row,idx){
-      if(idx>0){var lineDone=rowStatus[idx-1]!==null;html+='<div class="step-line'+(lineDone?" done":"")+'"></div>';}
+      if(idx>0){
+        var lineDone=rowStatus[idx-1]!==null;
+        html+='<div class="step-line'+(lineDone?" done":"")+'"></div>';
+      }
       var cls="step-btn";
-      var isActive=(_viewingIdx!==null)?idx===_viewingIdx:idx===currentRowIdx;
-      if(isActive)cls+=" active";
-      else if(rowStatus[idx]==="correct")cls+=" done";
-      else if(rowStatus[idx]==="wrong")cls+=" wrong";
+      if(idx===currentRowIdx) cls+=" active";
+      else if(rowStatus[idx]==="correct") cls+=" done";
+      else if(rowStatus[idx]==="wrong")   cls+=" wrong";
       var label=rowStatus[idx]==="correct"?"✓":rowStatus[idx]==="wrong"?"✕":(idx+1);
-      var clickable=rowStatus[idx]!==null || idx===currentRowIdx; // done rows + current
-      var extra=clickable?' data-step="'+idx+'" style="cursor:pointer;" title="Antworten ansehen"':'';
-      html+='<div class="'+cls+'"'+extra+'>'+label+"</div>";
+      html+='<div class="'+cls+'">'+label+'</div>';
     });
     stepperEl.innerHTML=html;
-    stepperEl.querySelectorAll("[data-step]").forEach(function(btn){
-      btn.addEventListener("click",function(){
-        var idx=parseInt(this.getAttribute("data-step"));
-        if(idx===currentRowIdx && rowStatus[idx]===null){
-          // clicking active row while viewing past → go back
-          _viewingIdx=null; checkBtn.style.display=""; render(); return;
-        }
-        viewPastRow(idx);
-      });
-    });
   }
 
-  function viewPastRow(idx){
-    if(rowStatus[idx]===null) return; // row not yet attempted
-    _viewingIdx=idx;
-    var row=rows[idx];
-
-    // Build text with filled blanks (correct/wrong colors)
-    var partsHtml=row.parts.map(function(p){
-      if(typeof p==="string") return "<span>"+esc(p)+"</span>";
-      var blankId=p.blank, wId=assignments[blankId];
-      var tone="";
-      if(wId){var wo=getWord(row,wId); tone=wo&&wo.label===row.solution[blankId]?"is-correct":"is-wrong";}
-      var inner=wId
-        ? '<div class="word-chip" style="font-size:13px;width:100%;height:100%;padding:2px 8px;cursor:default;box-shadow:none;margin:0;display:flex;align-items:center;justify-content:center;border:none;border-radius:6px;">'+esc(getWord(row,wId).label)+'</div>'
-        : '<span class="blank-placeholder"></span>';
-      return '<span class="luecke-blank'+(wId?" is-filled":"")+" "+(tone||"")+'" data-blank="'+blankId+'" data-row="'+row.id+'">'+inner+"</span>";
-    }).join("");
-
-    // Show correct answers in bank area
-    var solHtml='<div class="bank-label">Lösung</div>';
-    Object.keys(row.solution).forEach(function(blankId){
-      var correctLabel=row.solution[blankId];
-      var wId=assignments[blankId];
-      var actualWo=wId?getWord(row,wId):null;
-      var isCorrect=actualWo&&actualWo.label===correctLabel;
-      // Only show solution chip if student got it wrong or empty
-      if(!isCorrect){
-        solHtml+='<div class="word-chip" style="font-size:12px;min-height:30px;padding:2px 8px;cursor:default;background:#f0fdf4;border-color:#3bd668;">'+esc(correctLabel)+'</div>';
-      }
-    });
-    // If everything correct, just show a checkmark
-    var allCorrectRow=rowStatus[idx]==="correct";
-    if(allCorrectRow) solHtml='<div class="bank-label">Lösung</div><div style="text-align:center;font-size:22px;margin-top:4px;">✅</div>';
-
-    var rowCls="luecke-row"+(rowStatus[idx]==="correct"?" is-correct":rowStatus[idx]==="wrong"?" is-wrong":"");
-    listEl.innerHTML='<div class="'+rowCls+'">'
-      +'<div class="luecke-main">'
-        +'<div class="luecke-text">'+partsHtml+'</div>'
-      +'</div>'
-      +'<div class="luecke-bank" data-bank="'+row.id+'">'+solHtml+'</div>'
-      +'</div>';
-
-    // Hide check button while viewing, show a subtle "Zur Aufgabe" link instead
-    checkBtn.style.display="none";
-    renderStepper();
-  }
 
   // ── RENDER (single row) ───────────────────────────────────────────
   function render(){
-    _viewingIdx=null;
-    checkBtn.style.display="";
     var row=rows[currentRowIdx];
     var assigned=getAssignedIds(row.id);
     var bankWords=shuffle(row.words.filter(function(w){return assigned.indexOf(w.id)===-1;}));
