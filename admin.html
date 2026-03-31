@@ -649,7 +649,7 @@ const DEFAULT_PW     = 'Latein2025';
 const TASKS = {
   gerundium:       'Gerundium & Gerundivum',
   singular_plural: 'Singular oder Plural (Aufgabe 7)',
-  lueckentext:     'BB-ROM-13-A1 – Lückentext (Gram. L1A)'
+  lueckentext:     'Grammatik 1 A'
 };
 
 let supaUrl = '', supaKey = '', baseUrl = '', sb = null;
@@ -821,7 +821,7 @@ function taskLink(taskId, code) {
   const files = {
     gerundium:       'aufgabe.html',
     singular_plural: 'aufgabe7.html',
-    lueckentext:     'BB-ROM-13-A1.html',
+    lueckentext:     'Grammatik-1-A.html',
   };
   const file = files[taskId] || 'aufgabe.html';
   return base + file + '?s=' + code;
