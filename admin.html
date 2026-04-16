@@ -749,7 +749,7 @@ function startAutoRefresh() {
 async function silentRefresh() {
   // Only refresh if no modal is open and tab is visible
   if (document.hidden) return;
-  if (!document.querySelector('.modal-backdrop:not(.hidden)') === false) return;
+  if (document.querySelector('.modal-backdrop:not(.hidden)')) return;
   await loadStudents();
   await loadResults();
   // Update last-refreshed indicator
