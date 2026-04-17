@@ -345,6 +345,7 @@
           <option value="gerundium">Gerundium &amp; Gerundivum</option>
           <option value="singular_plural">Singular oder Plural</option>
           <option value="lueckentext">Grammatik 1 A</option>
+          <option value="pontes_l11_1a">Perfektbildung – 1a</option>
         </select>
         <select class="filter-select" id="filterResultStatus" onchange="renderResultsTable()">
           <option value="">Alle Status</option>
@@ -512,11 +513,13 @@ const TASK_FILES = {
   gerundium:       'aufgabe.html',
   singular_plural: 'aufgabe7.html',
   lueckentext:     'Grammatik-1-A.html',
+  pontes_l11_1a:   'Pontes-L11-1a.html',
 };
 const TASK_LABELS = {
   gerundium:       'Gerundium & Gerundivum',
   singular_plural: 'Singular oder Plural',
   lueckentext:     'Grammatik 1 A',
+  pontes_l11_1a:   'Perfektbildung – 1a',
 };
 
 /* Lehrbuch-Katalog */
@@ -537,7 +540,8 @@ const BOOKS = {
   pontes: {
     label: 'Pontes', icon: '📙',
     lektionen: Array.from({length:34}, (_,i) => ({
-      id: `po_l${i+1}`, label: `Lektion ${i+1}`, tasks: []
+      id: `po_l${i+1}`, label: `Lektion ${i+1}`,
+      tasks: i === 10 ? [{ id:'pontes_l11_1a', label:'1a – Doppelt hält besser (Perfektbildung)' }] : []
     }))
   },
   cursus: {
